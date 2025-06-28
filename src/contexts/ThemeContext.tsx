@@ -1,9 +1,10 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 interface ThemeContextType {
   isDark: boolean;
   toggleTheme: () => void;
+  isAdmin: boolean;
+  setIsAdmin: (isAdmin: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -21,18 +22,15 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme) {
-      setIsDark(savedTheme === 'dark');
-    } else {
-      setIsDark(prefersDark);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark';
     }
-  }, []);
+    return false;
+  });
+
+  // Admin state is session-based, not persistent
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (isDark) {
@@ -44,10 +42,19 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     }
   }, [isDark]);
 
-  const toggleTheme = () => setIsDark(!isDark);
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+  };
+
+  const value = {
+    isDark,
+    toggleTheme,
+    isAdmin,
+    setIsAdmin,
+  };
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,16 +1,51 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Shield, Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { PasswordGate } from '../components/admin/PasswordGate';
 import { Layout } from '../components/common/Layout';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const Administrator = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAdmin, setIsAdmin } = useTheme();
+  const [localIsAuthenticated, setLocalIsAuthenticated] = useState(false);
+  const location = useLocation();
 
-  if (!isAuthenticated) {
+  // Set global admin state when locally authenticated
+  useEffect(() => {
+    if (localIsAuthenticated) {
+      setIsAdmin(true);
+    }
+  }, [localIsAuthenticated, setIsAdmin]);
+
+  // Reset admin state when leaving the admin page
+  useEffect(() => {
+    return () => {
+      if (location.pathname !== '/administrator' && location.pathname !== '/data') {
+        setIsAdmin(false);
+      }
+    };
+  }, [location.pathname, setIsAdmin]);
+
+  // Reset admin state when component unmounts (navigating away)
+  useEffect(() => {
+    return () => {
+      setIsAdmin(false);
+    };
+  }, [setIsAdmin]);
+
+  const handleAuthenticate = () => {
+    setLocalIsAuthenticated(true);
+    setIsAdmin(true);
+  };
+
+  const handleLogout = () => {
+    setLocalIsAuthenticated(false);
+    setIsAdmin(false);
+  };
+
+  if (!localIsAuthenticated) {
     return (
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-900 dark:to-dark-800 flex items-center justify-center p-4">
@@ -27,7 +62,7 @@ export const Administrator = () => {
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Administrator Access</h2>
                 <p className="text-gray-600 dark:text-gray-300">Secure portal for exhibition management</p>
               </div>
-              <PasswordGate onAuthenticate={() => setIsAuthenticated(true)} />
+              <PasswordGate onAuthenticate={handleAuthenticate} />
             </div>
           </motion.div>
         </div>
@@ -65,7 +100,7 @@ export const Administrator = () => {
             </div>
             
             <button 
-              onClick={() => setIsAuthenticated(false)}
+              onClick={handleLogout}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
             >
               <Shield className="w-4 h-4" />
