@@ -91,23 +91,23 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
       )}
 
       {/* Header boxes */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="grid grid-cols-1 gap-2 mb-4">
         <Link 
-          to="/participant-stalls"
+          to="/stalls"
           className={`px-2 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded text-center ${compact ? 'text-xs' : 'text-sm'} hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer`}
         >
           <span className="text-blue-700 dark:text-blue-300 font-medium">
-            Participant stalls ({layout.stats.participant})
+            Totals stalls ({layout.stats.total})
           </span>
         </Link>
-        <Link 
+        {/* <Link 
           to="/utility-stalls"
           className={`px-2 py-1 bg-orange-50 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700 rounded text-center ${compact ? 'text-xs' : 'text-sm'} hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors cursor-pointer`}
         >
           <span className="text-orange-700 dark:text-orange-300 font-medium">
             Utility stalls ({layout.stats.utility})
           </span>
-        </Link>
+        </Link> */}
       </div>
 
       {/* Exhibition Map Grid */}

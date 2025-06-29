@@ -351,7 +351,7 @@ export const ExhibitionStallManager = () => {
                 type="number"
                 min="0"
                 value={rows}
-                onChange={(e) => setRows(parseInt(e.target.value) || 1)}
+                onChange={(e) => setRows(parseInt(e.target.value) || 0)}
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />
             </div>
@@ -362,7 +362,7 @@ export const ExhibitionStallManager = () => {
                 type="number"
                 min="0"
                 value={columns}
-                onChange={(e) => setColumns(parseInt(e.target.value) || 1)}
+                onChange={(e) => setColumns(parseInt(e.target.value) || 0)}
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />
             </div>

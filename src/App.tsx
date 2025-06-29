@@ -10,8 +10,8 @@ import { Administrator } from './pages/Administrator';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Data } from './pages/Data';
 import ExhibitionMapPage from './pages/ExhibitionMapPage';
-import ParticipantStallsPage from './pages/ParticipantStallsPage';
-import UtilityStallsPage from './pages/UtilityStallsPage';
+import AllStallsPage from './pages/AllStallsPage';
+
 
 function App() {
   return (
@@ -24,8 +24,7 @@ function App() {
           <Route path="/foods" element={<Foods />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/map" element={<ExhibitionMapPage />} />
-          <Route path="/participant-stalls" element={<ParticipantStallsPage />} />
-          <Route path="/utility-stalls" element={<UtilityStallsPage />} />
+          <Route path="/stalls" element={<AllStallsPage />} />
           <Route path="/administrator" element={<Administrator />} />
           <Route 
             path="/data" 
