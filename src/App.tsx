@@ -9,6 +9,9 @@ import { Feedback } from './pages/Feedback';
 import { Administrator } from './pages/Administrator';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Data } from './pages/Data';
+import ExhibitionMapPage from './pages/ExhibitionMapPage';
+import ParticipantStallsPage from './pages/ParticipantStallsPage';
+import UtilityStallsPage from './pages/UtilityStallsPage';
 
 function App() {
   return (
@@ -20,6 +23,9 @@ function App() {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/foods" element={<Foods />} />
           <Route path="/feedback" element={<Feedback />} />
+          <Route path="/map" element={<ExhibitionMapPage />} />
+          <Route path="/participant-stalls" element={<ParticipantStallsPage />} />
+          <Route path="/utility-stalls" element={<UtilityStallsPage />} />
           <Route path="/administrator" element={<Administrator />} />
           <Route 
             path="/data" 

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Package, Utensils, MessageSquare, Users, BarChart3, Sparkles, ArrowRight } from 'lucide-react';
+import { Calendar, Package, Utensils, MessageSquare, Users, BarChart3, Sparkles, ArrowRight, Map } from 'lucide-react';
 import { Layout } from '../components/common/Layout';
 import { FeatureCard } from '../components/FeatureCard';
 import { ExhibitionSlideshow } from '../components/ExhibitionSlideshow';
@@ -28,6 +28,13 @@ const features = [
     description: 'Experience the rich flavors of traditional Odia food and local delicacies.',
     to: '/foods',
     color: 'from-purple-500 to-purple-600'
+  },
+  {
+    icon: Map,
+    title: 'Exhibition Map',
+    description: 'Navigate through the exhibition layout and explore stall locations.',
+    to: '/map',
+    color: 'from-teal-500 to-teal-600'
   },
   {
     icon: MessageSquare,
