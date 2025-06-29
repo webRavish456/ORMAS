@@ -8,8 +8,8 @@ import { Layout } from '../components/common/Layout';
 import { useTheme } from '../contexts/ThemeContext';
 
 export const Administrator = () => {
-  const { isAdmin, setIsAdmin } = useTheme();
-  const [localIsAuthenticated, setLocalIsAuthenticated] = useState(false);
+  const { isAdmin, setIsAdmin, logout } = useTheme();
+  const [localIsAuthenticated, setLocalIsAuthenticated] = useState(isAdmin);
   const location = useLocation();
 
   // Set global admin state when locally authenticated
@@ -19,21 +19,7 @@ export const Administrator = () => {
     }
   }, [localIsAuthenticated, setIsAdmin]);
 
-  // Reset admin state when leaving the admin page
-  useEffect(() => {
-    return () => {
-      if (location.pathname !== '/administrator' && location.pathname !== '/data') {
-        setIsAdmin(false);
-      }
-    };
-  }, [location.pathname, setIsAdmin]);
 
-  // Reset admin state when component unmounts (navigating away)
-  useEffect(() => {
-    return () => {
-      setIsAdmin(false);
-    };
-  }, [setIsAdmin]);
 
   const handleAuthenticate = () => {
     setLocalIsAuthenticated(true);
@@ -42,7 +28,7 @@ export const Administrator = () => {
 
   const handleLogout = () => {
     setLocalIsAuthenticated(false);
-    setIsAdmin(false);
+    logout();
   };
 
   if (!localIsAuthenticated) {

@@ -5,6 +5,7 @@ interface ThemeContextType {
   toggleTheme: () => void;
   isAdmin: boolean;
   setIsAdmin: (isAdmin: boolean) => void;
+  logout: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -29,8 +30,13 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     return false;
   });
 
-  // Admin state is session-based, not persistent
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Admin state is session-based and persistent
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('isAdmin') === 'true';
+    }
+    return false;
+  });
 
   useEffect(() => {
     if (isDark) {
@@ -42,8 +48,21 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('isAdmin', isAdmin.toString());
+    }
+  }, [isAdmin]);
+
   const toggleTheme = () => {
     setIsDark(!isDark);
+  };
+
+  const logout = () => {
+    setIsAdmin(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('isAdmin');
+    }
   };
 
   const value = {
@@ -51,6 +70,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     toggleTheme,
     isAdmin,
     setIsAdmin,
+    logout,
   };
 
   return (

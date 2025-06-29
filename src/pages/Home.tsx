@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Package, Utensils, MessageSquare, Users, BarChart3, Sparkles, ArrowRight, Map } from 'lucide-react';
+import { Calendar, Package, Utensils, MessageSquare, Sparkles, ArrowRight, Map } from 'lucide-react';
 import { Layout } from '../components/common/Layout';
 import { FeatureCard } from '../components/FeatureCard';
 import { ExhibitionSlideshow } from '../components/ExhibitionSlideshow';
@@ -42,20 +42,6 @@ const features = [
     description: 'Share your experience and help us improve future exhibitions.',
     to: '/feedback',
     color: 'from-red-500 to-red-600'
-  },
-  {
-    icon: Users,
-    title: 'Administration',
-    description: 'Administrative panel for exhibition management and operations.',
-    to: '/administrator',
-    color: 'from-gray-500 to-gray-600'
-  },
-  {
-    icon: BarChart3,
-    title: 'Data Analytics',
-    description: 'View detailed analytics and insights about the exhibition.',
-    to: '/data',
-    color: 'from-yellow-500 to-yellow-600'
   }
 ];
 

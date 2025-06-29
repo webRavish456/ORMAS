@@ -23,12 +23,7 @@ export const Navbar = () => {
   // Filter navigation items based on admin status
   const navItems = allNavItems.filter(item => !item.adminOnly || isAdmin);
 
-  // Reset admin state when navigating away from admin pages
-  useEffect(() => {
-    if (location.pathname !== '/administrator' && location.pathname !== '/data') {
-      setIsAdmin(false);
-    }
-  }, [location.pathname, setIsAdmin]);
+
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-dark-900/80 backdrop-blur-md border-b border-gray-200 dark:border-dark-700">
