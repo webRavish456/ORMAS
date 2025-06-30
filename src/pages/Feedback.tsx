@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, Star, Send, User, Mail, Phone, MapPin, Heart } from 'lucide-react';
+import { MessageSquare, Star, Send, User, Mail, Phone, Heart } from 'lucide-react';
 import { Layout } from '../components/common/Layout';
 import { submitFeedback } from '../services/feedbackService';
 
@@ -10,11 +10,11 @@ export const Feedback = () => {
     email: '',
     mobile: '',
     gender: '',
-    location: '',
     areaOfInterest: '',
     responses: {} as Record<string, string>
   });
   const [rating, setRating] = useState(0);
+  const [foodRating, setFoodRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -25,8 +25,10 @@ export const Feedback = () => {
     try {
       await submitFeedback({
         ...formData,
+        location: '', // Keep empty for compatibility
         responses: [
-          { question: 'Overall Rating', answer: rating.toString() },
+          { question: 'Exhibition Rating', answer: rating.toString() },
+          { question: 'Food Rating', answer: foodRating.toString() },
           { question: 'Message', answer: formData.responses.message || '' }
         ]
       });
@@ -58,7 +60,19 @@ export const Feedback = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setSubmitted(false)}
+            onClick={() => {
+              setSubmitted(false);
+              setRating(0);
+              setFoodRating(0);
+              setFormData({
+                name: '',
+                email: '',
+                mobile: '',
+                gender: '',
+                areaOfInterest: '',
+                responses: {}
+              });
+            }}
             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200"
           >
             Submit Another Feedback
@@ -74,11 +88,11 @@ export const Feedback = () => {
       subtitle="Share your experience and help us improve future exhibitions"
       backgroundGradient="from-pink-50 via-rose-50 to-red-50 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900"
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto pb-8 sm:pb-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-dark-700"
+          className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl p-4 sm:p-8 border border-gray-200 dark:border-dark-700"
         >
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-500 to-red-600 rounded-full flex items-center justify-center">
@@ -92,8 +106,8 @@ export const Feedback = () => {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Information */}
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            {/* Personal Information - Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -124,7 +138,10 @@ export const Feedback = () => {
                   placeholder="Enter your email"
                 />
               </div>
+            </div>
 
+            {/* Mobile Number and Exhibition Rating - Row 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Phone className="inline w-4 h-4 mr-2" />
@@ -139,42 +156,62 @@ export const Feedback = () => {
                 />
               </div>
 
+              {/* Exhibition Rating */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <MapPin className="inline w-4 h-4 mr-2" />
-                  Location
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                  Exhibition Rating *
                 </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Enter your location"
-                />
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <motion.button
+                      key={star}
+                      type="button"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setRating(star)}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                        star <= rating 
+                          ? 'bg-yellow-400 text-white' 
+                          : 'bg-gray-200 dark:bg-dark-700 text-gray-400'
+                      }`}
+                    >
+                      <Star className={`w-6 h-6 ${star <= rating ? 'fill-current' : ''}`} />
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Rating */}
+            {/* Food Rating - Row 3 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                Overall Rating *
+                Food Rating
               </label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <motion.button
-                    key={star}
-                    type="button"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setRating(star)}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                      star <= rating 
-                        ? 'bg-yellow-400 text-white' 
-                        : 'bg-gray-200 dark:bg-dark-700 text-gray-400'
-                    }`}
-                  >
-                    <Star className={`w-6 h-6 ${star <= rating ? 'fill-current' : ''}`} />
-                  </motion.button>
+              <div className="flex gap-3">
+                {[
+                  { value: 1, emoji: '😞', label: 'Bad' },
+                  { value: 2, emoji: '😐', label: 'Average' },
+                  { value: 3, emoji: '😊', label: 'Good' },
+                  { value: 4, emoji: '😍', label: 'Excellent' }
+                ].map((option) => (
+                  <div key={option.value} className="flex flex-col items-center">
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setFoodRating(option.value)}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                        foodRating === option.value
+                          ? 'bg-orange-400 text-white'
+                          : 'bg-gray-200 dark:bg-dark-700 text-gray-400 hover:bg-orange-200'
+                      }`}
+                    >
+                      <span className="text-lg">{option.emoji}</span>
+                    </motion.button>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-1 text-center">
+                      {option.label}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -197,13 +234,14 @@ export const Feedback = () => {
             </div>
 
             {/* Submit Button */}
-            <motion.button
-              type="submit"
-              disabled={loading || rating === 0}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full bg-gradient-to-r from-pink-500 to-red-600 hover:from-pink-600 hover:to-red-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
-            >
+            <div className="pt-4 sm:pt-6">
+              <motion.button
+                type="submit"
+                disabled={loading || rating === 0}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-gradient-to-r from-pink-500 to-red-600 hover:from-pink-600 hover:to-red-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+              >
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
@@ -212,7 +250,8 @@ export const Feedback = () => {
                   Submit Feedback
                 </>
               )}
-            </motion.button>
+              </motion.button>
+            </div>
           </form>
         </motion.div>
       </div>

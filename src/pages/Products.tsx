@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Package, Grid, List, Search, ShoppingCart, Sparkles } from 'lucide-react';
+import { Package, Grid, List, Search, ShoppingCart } from 'lucide-react';
 import { Layout } from '../components/common/Layout';
 import { CategoryButtons } from '../components/products/CategoryButtons';
 import { ProductGrid } from '../components/products/ProductGrid';
@@ -100,9 +100,9 @@ export const Products = () => {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-md rounded-2xl shadow-xl p-6 mb-8 border border-gray-200 dark:border-dark-700"
       >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="space-y-4">
           {/* Search */}
-          <div className="relative flex-1 max-w-md">
+          <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
@@ -113,39 +113,36 @@ export const Products = () => {
             />
           </div>
 
-          {/* View Toggle */}
-          <div className="flex items-center gap-2 bg-gray-100 dark:bg-dark-700 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'grid' 
-                  ? 'bg-white dark:bg-dark-600 text-blue-600 shadow-sm' 
-                  : 'text-gray-600 dark:text-gray-300 hover:text-blue-600'
-              }`}
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'list' 
-                  ? 'bg-white dark:bg-dark-600 text-blue-600 shadow-sm' 
-                  : 'text-gray-600 dark:text-gray-300 hover:text-blue-600'
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
+          {/* View Toggle and Product Count Row */}
+          <div className="flex items-center justify-between">
+            {/* View Toggle */}
+            <div className="flex items-center gap-2 bg-gray-100 dark:bg-dark-700 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'grid' 
+                    ? 'bg-white dark:bg-dark-600 text-blue-600 shadow-sm' 
+                    : 'text-gray-600 dark:text-gray-300 hover:text-blue-600'
+                }`}
+              >
+                <Grid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'list' 
+                    ? 'bg-white dark:bg-dark-600 text-blue-600 shadow-sm' 
+                    : 'text-gray-600 dark:text-gray-300 hover:text-blue-600'
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
-            <div className="flex items-center gap-1">
+            {/* Product Count */}
+            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
               <Package className="w-4 h-4" />
               <span>{filteredProducts.length} products</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Sparkles className="w-4 h-4" />
-              <span>Authentic & Traditional</span>
             </div>
           </div>
         </div>
@@ -208,17 +205,9 @@ export const Products = () => {
         <h3 className="text-2xl font-bold mb-4">
           Authentic Products from Odisha
         </h3>
-        <p className="text-lg opacity-90 mb-6">
+        <p className="text-lg opacity-90">
           Each product tells a story of tradition, craftsmanship, and cultural heritage
         </p>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="bg-white text-blue-600 px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2 mx-auto"
-        >
-          <ShoppingCart className="w-5 h-5" />
-          Shop Now
-        </motion.button>
       </motion.div>
     </Layout>
   );

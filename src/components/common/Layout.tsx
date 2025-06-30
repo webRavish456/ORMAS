@@ -31,7 +31,7 @@ export const Layout = ({
       <div className="pt-16 w-full">
         {showMarquee && <MarqueeBanner />}
         
-        <div className={`w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 ${className}`}>
+        <div className={`w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-8 sm:pb-12 ${className}`}>
           {title && (
             <motion.div
               initial={{ opacity: 0, y: -20 }}

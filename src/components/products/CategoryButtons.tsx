@@ -22,7 +22,7 @@ export const CategoryButtons = ({
             <motion.button
               key={category}
               onClick={() => onCategoryChange(category)}
-              className={`flex-shrink-0 px-4 py-2 rounded-lg text-center transition-all whitespace-nowrap text-sm ${
+              className={`flex-shrink-0 min-w-[120px] px-4 py-3 rounded-lg text-center transition-all whitespace-nowrap text-sm ${
                 selectedCategory === category
                   ? 'bg-orange-600 text-white shadow-lg'
                   : 'bg-white text-orange-600 hover:bg-orange-50 border border-orange-200'
@@ -43,13 +43,14 @@ export const CategoryButtons = ({
             <motion.button
               key={category}
               onClick={() => onCategoryChange(category)}
-              className={`px-3 sm:px-4 py-2 rounded-lg text-center transition-all text-sm sm:text-base ${
+              className={`w-full min-w-0 px-3 sm:px-4 py-3 rounded-lg text-center transition-all text-sm sm:text-base truncate ${
                 selectedCategory === category
                   ? 'bg-orange-600 text-white shadow-lg'
                   : 'bg-white text-orange-600 hover:bg-orange-50 border border-orange-200'
               }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              title={category}
             >
               {category}
             </motion.button>
