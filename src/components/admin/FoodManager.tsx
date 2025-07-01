@@ -12,14 +12,16 @@ export const FoodManager = () => {
     description: '',
     location: '',
     price: '',
-    images: ['']
+    images: [''],
+    isVegetarian: true
   });
   const [editForm, setEditForm] = useState({
     name: '',
     description: '',
     location: '',
     price: '',
-    images: ['']
+    images: [''],
+    isVegetarian: true
   });
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export const FoodManager = () => {
       try {
         const savedFood = await saveFood(newFood);
         setFoods([...foods, savedFood]);
-        setNewFood({ name: '', description: '', location: '', price: '', images: [''] });
+        setNewFood({ name: '', description: '', location: '', price: '', images: [''], isVegetarian: true });
       } catch (err) {
         setError('Failed to add food item');
         console.error('Error adding food:', err);
@@ -59,7 +61,8 @@ export const FoodManager = () => {
       description: food.description,
       location: food.location,
       price: food.price,
-      images: food.images
+      images: food.images,
+      isVegetarian: food.isVegetarian
     });
   };
 
@@ -161,6 +164,14 @@ export const FoodManager = () => {
           onChange={(e) => setNewFood({ ...newFood, price: e.target.value })}
           className="px-4 py-2 border rounded-lg"
         />
+        <select
+          value={newFood.isVegetarian ? 'vegetarian' : 'non-vegetarian'}
+          onChange={(e) => setNewFood({ ...newFood, isVegetarian: e.target.value === 'vegetarian' })}
+          className="px-4 py-2 border rounded-lg"
+        >
+          <option value="vegetarian">Vegetarian</option>
+          <option value="non-vegetarian">Non-Vegetarian</option>
+        </select>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Images
@@ -235,6 +246,14 @@ export const FoodManager = () => {
                   className="px-4 py-2 border rounded-lg"
                   placeholder="Price"
                 />
+                <select
+                  value={editForm.isVegetarian ? 'vegetarian' : 'non-vegetarian'}
+                  onChange={(e) => setEditForm({ ...editForm, isVegetarian: e.target.value === 'vegetarian' })}
+                  className="px-4 py-2 border rounded-lg"
+                >
+                  <option value="vegetarian">Vegetarian</option>
+                  <option value="non-vegetarian">Non-Vegetarian</option>
+                </select>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Images
@@ -296,6 +315,15 @@ export const FoodManager = () => {
                     <div className="flex items-center gap-4">
                       <h3 className="font-semibold">{food.name}</h3>
                       <span className="text-green-600">{food.price}</span>
+                      <div className={`w-4 h-4 rounded-sm border-2 flex items-center justify-center ${
+                        food.isVegetarian 
+                          ? 'bg-green-500 border-green-600' 
+                          : 'bg-red-500 border-red-600'
+                      }`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          food.isVegetarian ? 'bg-green-700' : 'bg-red-700'
+                        }`}></div>
+                      </div>
                     </div>
                     <p className="text-gray-600">{food.description}</p>
                     <p className="text-sm text-gray-500">{food.location}</p>

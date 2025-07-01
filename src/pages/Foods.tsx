@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Utensils, MapPin, Star, Clock, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Utensils, MapPin, Clock } from 'lucide-react';
 import { Layout } from '../components/common/Layout';
 import { getFoods, type Food } from '../services/foodService';
 
@@ -66,8 +65,7 @@ export const Foods = () => {
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [priceRange, setPriceRange] = useState<string>('All');
+  const [dietaryFilter, setDietaryFilter] = useState<string>('All'); // All, Veg, Non-Veg
 
   useEffect(() => {
     const fetchFoods = async () => {
@@ -89,18 +87,11 @@ export const Foods = () => {
   const filterFoods = () => {
     let filtered = [...foods];
 
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter(food => food.name.toLowerCase().includes(selectedCategory.toLowerCase()));
-    }
-
-    if (priceRange !== 'All') {
+    if (dietaryFilter !== 'All') {
       filtered = filtered.filter(food => {
-        const price = parseFloat(food.price.replace('₹', ''));
-        if (priceRange === 'Under ₹50' && price < 50) return true;
-        if (priceRange === '₹50-₹100' && price >= 50 && price <= 100) return true;
-        if (priceRange === '₹100-₹200' && price >= 100 && price <= 200) return true;
-        if (priceRange === 'Above ₹200' && price > 200) return true;
-        return false;
+        if (dietaryFilter === 'Veg') return food.isVegetarian;
+        if (dietaryFilter === 'Non-Veg') return !food.isVegetarian;
+        return true;
       });
     }
 
@@ -109,10 +100,7 @@ export const Foods = () => {
 
   useEffect(() => {
     filterFoods();
-  }, [foods, selectedCategory, priceRange]);
-
-  const categories = ['All', 'Traditional', 'Sweets', 'Snacks', 'Beverages', 'Main Course'];
-  const priceRanges = ['All', 'Under ₹50', '₹50-₹100', '₹100-₹200', 'Above ₹200'];
+  }, [foods, dietaryFilter]);
 
   if (loading) {
     return (
@@ -160,37 +148,47 @@ export const Foods = () => {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-md rounded-2xl shadow-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-200 dark:border-dark-700"
       >
-        <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-orange-600" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
-            </div>
-            
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 text-sm bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-lg focus:ring-2 focus:ring-orange-500"
+        {/* Dietary Filter Buttons and Stats */}
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex gap-1 sm:gap-2">
+            <button
+              onClick={() => setDietaryFilter('All')}
+              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg border transition-all duration-200 ${
+                dietaryFilter === 'All'
+                  ? 'bg-gray-500 border-gray-500 text-white'
+                  : 'bg-gray-100 dark:bg-dark-700 border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 hover:border-gray-300'
+              }`}
             >
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-            
-            <select
-              value={priceRange}
-              onChange={(e) => setPriceRange(e.target.value)}
-              className="px-3 py-2 text-sm bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-lg focus:ring-2 focus:ring-orange-500"
+              All Items
+            </button>
+            <button
+              onClick={() => setDietaryFilter('Veg')}
+              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg border transition-all duration-200 flex items-center justify-center gap-1 sm:gap-1.5 ${
+                dietaryFilter === 'Veg'
+                  ? 'bg-green-500 border-green-500 text-white'
+                  : 'bg-green-50 dark:bg-green-900/20 border-gray-200 dark:border-dark-700 text-green-700 dark:text-green-300 hover:border-green-300'
+              }`}
             >
-              {priceRanges.map(range => (
-                <option key={range} value={range}>{range}</option>
-              ))}
-            </select>
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-500 rounded-full border border-green-600"></div>
+              <span className="hidden sm:inline">Vegetarian</span>
+              <span className="sm:hidden">Veg</span>
+            </button>
+            <button
+              onClick={() => setDietaryFilter('Non-Veg')}
+              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg border transition-all duration-200 flex items-center justify-center gap-1 sm:gap-1.5 ${
+                dietaryFilter === 'Non-Veg'
+                  ? 'bg-red-500 border-red-500 text-white'
+                  : 'bg-red-50 dark:bg-red-900/20 border-gray-200 dark:border-dark-700 text-red-700 dark:text-red-300 hover:border-red-300'
+              }`}
+            >
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full border border-red-600"></div>
+              <span className="hidden sm:inline">Non-Vegetarian</span>
+              <span className="sm:hidden">Non-Veg</span>
+            </button>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-2 sm:gap-4 text-sm text-gray-600 dark:text-gray-300">
+          <div className="flex items-center justify-center sm:justify-end gap-4 text-sm text-gray-600 dark:text-gray-300">
             <div className="flex items-center gap-1">
               <Utensils className="w-4 h-4" />
               <span>{filteredFoods.length} items</span>
@@ -215,27 +213,49 @@ export const Foods = () => {
           >
             {/* Image Carousel */}
             {food.images && food.images.length > 0 && (
-              <ImageCarousel images={food.images} />
+              <div className="relative">
+                <ImageCarousel images={food.images} />
+                {/* Veg/Non-Veg Indicator */}
+                <div className="absolute top-3 right-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    food.isVegetarian 
+                      ? 'bg-green-500 border-green-600' 
+                      : 'bg-red-500 border-red-600'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      food.isVegetarian ? 'bg-green-700' : 'bg-red-700'
+                    }`}></div>
+                  </div>
+                </div>
+              </div>
             )}
             
             {/* Content */}
             <div className="p-4 sm:p-6">
               {/* Header */}
-              <div className="mb-3">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+              <div className="mb-3 flex items-start justify-between">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors flex-1">
                   {food.name}
                 </h3>
+                {/* Veg/Non-Veg Indicator for items without images */}
+                {(!food.images || food.images.length === 0) && (
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ml-2 flex-shrink-0 ${
+                    food.isVegetarian 
+                      ? 'bg-green-500 border-green-600' 
+                      : 'bg-red-500 border-red-600'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      food.isVegetarian ? 'bg-green-700' : 'bg-red-700'
+                    }`}></div>
+                  </div>
+                )}
               </div>
 
               {/* Price */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-3">
                 <span className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">
                   {food.price}
                 </span>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-sm text-gray-600 dark:text-gray-300">4.8</span>
-                </div>
               </div>
 
               {/* Description */}
@@ -271,8 +291,7 @@ export const Foods = () => {
           </p>
           <button
             onClick={() => {
-              setSelectedCategory('All');
-              setPriceRange('All');
+              setDietaryFilter('All');
             }}
             className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
           >

@@ -8,6 +8,7 @@ export interface Food {
   location: string;
   price: string;
   images: string[];
+  isVegetarian: boolean;
 }
 
 const foodsCollection = collection(db, 'foods');

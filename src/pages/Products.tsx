@@ -115,29 +115,29 @@ export const Products = () => {
 
           {/* View Toggle and Product Count Row */}
           <div className="flex items-center justify-between">
-            {/* View Toggle */}
-            <div className="flex items-center gap-2 bg-gray-100 dark:bg-dark-700 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'grid' 
-                    ? 'bg-white dark:bg-dark-600 text-blue-600 shadow-sm' 
-                    : 'text-gray-600 dark:text-gray-300 hover:text-blue-600'
-                }`}
-              >
-                <Grid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'list' 
-                    ? 'bg-white dark:bg-dark-600 text-blue-600 shadow-sm' 
-                    : 'text-gray-600 dark:text-gray-300 hover:text-blue-600'
-                }`}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
+          {/* View Toggle */}
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-dark-700 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-md transition-colors ${
+                viewMode === 'grid' 
+                  ? 'bg-white dark:bg-dark-600 text-blue-600 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-blue-600'
+              }`}
+            >
+              <Grid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-md transition-colors ${
+                viewMode === 'list' 
+                  ? 'bg-white dark:bg-dark-600 text-blue-600 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-blue-600'
+              }`}
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
 
             {/* Product Count */}
             <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">

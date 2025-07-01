@@ -138,7 +138,7 @@ export const Feedback = () => {
                   placeholder="Enter your email"
                 />
               </div>
-            </div>
+              </div>
 
             {/* Mobile Number and Exhibition Rating - Row 2 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -160,23 +160,23 @@ export const Feedback = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
                   Exhibition Rating *
-                </label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <motion.button
-                      key={star}
-                      type="button"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setRating(star)}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                        star <= rating 
-                          ? 'bg-yellow-400 text-white' 
-                          : 'bg-gray-200 dark:bg-dark-700 text-gray-400'
-                      }`}
-                    >
-                      <Star className={`w-6 h-6 ${star <= rating ? 'fill-current' : ''}`} />
-                    </motion.button>
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <motion.button
+                    key={star}
+                    type="button"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setRating(star)}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                      star <= rating 
+                        ? 'bg-yellow-400 text-white' 
+                        : 'bg-gray-200 dark:bg-dark-700 text-gray-400'
+                    }`}
+                  >
+                    <Star className={`w-6 h-6 ${star <= rating ? 'fill-current' : ''}`} />
+                  </motion.button>
                   ))}
                 </div>
               </div>
@@ -235,13 +235,13 @@ export const Feedback = () => {
 
             {/* Submit Button */}
             <div className="pt-4 sm:pt-6">
-              <motion.button
-                type="submit"
-                disabled={loading || rating === 0}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-pink-500 to-red-600 hover:from-pink-600 hover:to-red-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
-              >
+            <motion.button
+              type="submit"
+              disabled={loading || rating === 0}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full bg-gradient-to-r from-pink-500 to-red-600 hover:from-pink-600 hover:to-red-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+            >
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
@@ -250,7 +250,7 @@ export const Feedback = () => {
                   Submit Feedback
                 </>
               )}
-              </motion.button>
+            </motion.button>
             </div>
           </form>
         </motion.div>
