@@ -11,17 +11,25 @@ const allNavItems = [
   { path: '/foods', label: 'Foods', icon: Utensils },
   { path: '/feedback', label: 'Feedback', icon: MessageSquare },
   { path: '/map', label: 'Map', icon: Map },
-  { path: '/administrator', label: 'Admin', icon: Users, adminOnly: true },
-  { path: '/data', label: 'Data', icon: BarChart3, adminOnly: true },
+  { path: '/administrator', label: 'Admin', icon: Users, requiresAdmin: true },
+  { path: '/data', label: 'Data', icon: BarChart3, requiresDataAccess: true },
 ];
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { isDark, toggleTheme, isAdmin, setIsAdmin } = useTheme();
+  const { isDark, toggleTheme, isAdmin, isDataUser, userRole } = useTheme();
 
-  // Filter navigation items based on admin status
-  const navItems = allNavItems.filter(item => !item.adminOnly || isAdmin);
+  // Filter navigation items based on user role
+  const navItems = allNavItems.filter(item => {
+    if (item.requiresAdmin) {
+      return isAdmin;
+    }
+    if (item.requiresDataAccess) {
+      return isAdmin || isDataUser;
+    }
+    return true;
+  });
 
 
 

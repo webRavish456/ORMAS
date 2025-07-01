@@ -1,26 +1,31 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
+type UserRole = 'none' | 'data' | 'admin';
+
 interface ThemeContextType {
   isDark: boolean;
   toggleTheme: () => void;
   isAdmin: boolean;
+  isDataUser: boolean;
+  userRole: UserRole;
   setIsAdmin: (isAdmin: boolean) => void;
+  setIsDataUser: (isDataUser: boolean) => void;
   logout: () => void;
+}
+
+interface ThemeProviderProps {
+  children: ReactNode;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const useTheme = () => {
+export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
 };
-
-interface ThemeProviderProps {
-  children: ReactNode;
-}
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const [isDark, setIsDark] = useState(() => {
@@ -38,6 +43,17 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     return false;
   });
 
+  // Data user state is session-based and persistent
+  const [isDataUser, setIsDataUser] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('isDataUser') === 'true';
+    }
+    return false;
+  });
+
+  // Determine user role based on permissions
+  const userRole: UserRole = isAdmin ? 'admin' : isDataUser ? 'data' : 'none';
+
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
@@ -54,14 +70,22 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     }
   }, [isAdmin]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('isDataUser', isDataUser.toString());
+    }
+  }, [isDataUser]);
+
   const toggleTheme = () => {
     setIsDark(!isDark);
   };
 
   const logout = () => {
     setIsAdmin(false);
+    setIsDataUser(false);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('isAdmin');
+      sessionStorage.removeItem('isDataUser');
     }
   };
 
@@ -69,7 +93,10 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     isDark,
     toggleTheme,
     isAdmin,
+    isDataUser,
+    userRole,
     setIsAdmin,
+    setIsDataUser,
     logout,
   };
 
