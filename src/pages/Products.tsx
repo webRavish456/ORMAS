@@ -162,7 +162,8 @@ export const Products = () => {
           description: 'Traditional product from Odisha',
           price: '₹299',
           imageUrl: product.images?.[0] || '/api/placeholder/300/300',
-          category: product.category
+          category: product.category,
+          stallRange: product.stallRange
         }))}
         viewMode={viewMode}
       />
