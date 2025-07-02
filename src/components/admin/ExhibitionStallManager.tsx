@@ -10,15 +10,28 @@ import {
   Save, 
   X, 
   Building2,
-  Settings
+  Settings,
+  Shirt,
+  Palette,
+  Leaf,
+  UtensilsCrossed,
+  Sofa,
+  Scissors,
+  Briefcase,
+  Gem
 } from 'lucide-react';
+
+import rawIndiaData from '../../data/india_state_district_block.json';
+import { processIndiaData, getStates, getDistricts, getBlocks } from '../../utils/indiaDataProcessor';
+
+
 
 interface Stall {
   id: string;
   row: number;
   column: number;
   stallNumber: string;
-  type: 'participant' | 'utility';
+  type?: 'participant' | 'utility'; // Optional initially
   name?: string;
   description?: string;
   category?: string;
@@ -32,8 +45,8 @@ interface Stall {
   };
   products?: string[];
   images?: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 
@@ -48,6 +61,54 @@ const STALL_CATEGORIES = [
   'Jewellery'
 ];
 
+// Category color mapping for participant stalls
+const CATEGORY_COLORS: Record<string, string> = {
+  Handloom: 'bg-indigo-500',
+  Handicraft: 'bg-yellow-500',
+  'Minor Forest Products (MFP)': 'bg-green-600',
+  'Food & Spices': 'bg-red-500',
+  'Home Furnishing': 'bg-pink-500',
+  'Woolen Knit Wear': 'bg-blue-400',
+  'Leather Products': 'bg-amber-700',
+  Jewellery: 'bg-rose-500',
+};
+
+// Category to icon mapping
+const CATEGORY_ICONS: Record<string, any> = {
+  Handloom: Shirt,
+  Handicraft: Palette,
+  'Minor Forest Products (MFP)': Leaf,
+  'Food & Spices': UtensilsCrossed,
+  'Home Furnishing': Sofa,
+  'Woolen Knit Wear': Scissors,
+  'Leather Products': Briefcase,
+  Jewellery: Gem,
+};
+
+// Process India data for cascading dropdowns
+const processedIndiaData = processIndiaData(rawIndiaData);
+
+// Utility to deeply clean an object
+function deepCleanObject(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(deepCleanObject);
+  } else if (obj && typeof obj === 'object') {
+    const cleaned: any = {};
+    Object.keys(obj).forEach(key => {
+      const value = obj[key];
+      if (
+        value !== undefined &&
+        value !== null &&
+        !(typeof value === 'string' && value.trim() === '')
+      ) {
+        cleaned[key] = deepCleanObject(value);
+      }
+    });
+    return cleaned;
+  }
+  return obj;
+}
+
 export const ExhibitionStallManager = () => {
   const [stalls, setStalls] = useState<Stall[]>([]);
   const [selectedStall, setSelectedStall] = useState<Stall | null>(null);
@@ -57,20 +118,19 @@ export const ExhibitionStallManager = () => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [stallsCreated, setStallsCreated] = useState(false);
   
-  // Simple form fields
+  // Simple form fields - only rows and columns
   const [rows, setRows] = useState(0);
   const [columns, setColumns] = useState(0);
-  const [participantStalls, setParticipantStalls] = useState(0);
-  const [utilityStalls, setUtilityStalls] = useState(0);
-  const [lastEdited, setLastEdited] = useState("participant");
   const [totalStalls, setTotalStalls] = useState(0);
 
-
+  // Stats start at zero and update after assignment
   const [stats, setStats] = useState({
     total: 0,
     participant: 0,
     utility: 0,
   });
+
+  const [typeSelectionStall, setTypeSelectionStall] = useState<Stall | null>(null);
 
   useEffect(() => {
     calculateStalls();
@@ -115,25 +175,12 @@ export const ExhibitionStallManager = () => {
   const calculateStalls = () => {
     const total = rows * columns;
     setTotalStalls(total);
-    const participants = Math.floor(total * 0.8);
-    const utilities = total - participants;
-    
-    setParticipantStalls(participants);
-    setUtilityStalls(utilities);
   };
-
-
-  useEffect(() => {
-    if (lastEdited === "participant") {
-      setUtilityStalls(totalStalls - participantStalls);
-    } else if (lastEdited === "utility") {
-      setParticipantStalls(totalStalls - utilityStalls);
-    }
-  }, [rows, columns, participantStalls, utilityStalls]);
 
 
 
   const handleCreateStalls = async () => {
+    let initialStalls: Omit<Stall, 'id'>[] = [];
     try {
       setLoading(true);
       setError(null);
@@ -143,24 +190,22 @@ export const ExhibitionStallManager = () => {
       const deletePromises = existingStalls.docs.map(doc => deleteDoc(doc.ref));
       await Promise.all(deletePromises);
   
-      // Create new stalls
+      // Create new stalls (all gray, no type/category assigned yet)
       const total = rows * columns;
-      const participants = participantStalls;
-      const initialStalls: Omit<Stall, 'id'>[] = [];
+      initialStalls = [];
   
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < columns; col++) {
           const stallNumber = `${String.fromCharCode(65 + row)}${col + 1}`;
-          const stallIndex = row * columns + col;
-  
-          initialStalls.push({
+          const stall: any = {
             row,
             column: col,
             stallNumber,
-            type: stallIndex < participants ? 'participant' : 'utility',
             createdAt: new Date(),
             updatedAt: new Date()
-          });
+          };
+          // Do not include 'type' field if undefined
+          initialStalls.push(stall);
         }
       }
   
@@ -178,51 +223,92 @@ export const ExhibitionStallManager = () => {
       setStalls(stallsWithIds);
       setStallsCreated(true);
   
-      // Update statistics
-      const participantCount = stallsWithIds.filter(s => s.type === 'participant').length;
-      const utilityCount = stallsWithIds.filter(s => s.type === 'utility').length;
-  
-      console.log("participantCount", participantCount);
-      console.log("utilityCount", utilityCount);
-      console.log("stallsWithIds", stallsWithIds);
-  
+      // Set stats: only total, participant and utility are 0 initially
       setStats({
         total: stallsWithIds.length,
-        participant: participantCount,
-        utility: utilityCount
+        participant: 0,
+        utility: 0
       });
   
     } catch (err) {
-      console.error('Error creating stalls:', err);
+      console.error('Error creating stalls:', err, rows, columns, initialStalls);
       setError('Failed to create stalls');
     } finally {
       setLoading(false);
     }
   };
   
-  console.log("stats", stats);
-  console.log("stalls", stalls);
+
 
   const getStallAtPosition = (row: number, column: number): Stall | undefined => {
     return stalls.find(stall => stall.row === row && stall.column === column);
   };
 
   const getStallColor = (stall: Stall): string => {
+    // If no type, show gray (initial state)
+    if (!stall.type) return 'bg-gray-400';
+    
     switch (stall.type) {
-      case 'participant': return 'bg-blue-500';
-      case 'utility': return 'bg-purple-500';
-      default: return 'bg-blue-500';
+      case 'participant': 
+        // Use category color if available, otherwise blue
+        return stall.category && CATEGORY_COLORS[stall.category] 
+          ? CATEGORY_COLORS[stall.category] 
+          : 'bg-blue-500';
+      case 'utility': 
+        return 'bg-purple-600'; // Gray for utility stalls
+      default: 
+        return 'bg-gray-400';
     }
   };
 
   const getStallIcon = (stall: Stall) => {
-    if (stall.type === 'utility') return <Settings className="w-4 h-4" />;
-    return <Users className="w-4 h-4" />;
+    if (stall.type === 'participant' && stall.category && CATEGORY_ICONS[stall.category]) {
+      const Icon = CATEGORY_ICONS[stall.category];
+      return <Icon className="w-5 h-5 mb-1" />;
+    }
+    return null;
   };
 
   const handleStallClick = (stall: Stall) => {
-    setSelectedStall(stall);
-    setEditingStall(null);
+    // If stall has no type (initial gray state), show type selection popup
+    if (!stall.type) {
+      setTypeSelectionStall(stall);
+      setSelectedStall(null);
+      setEditingStall(null);
+    } else {
+      // If stall has a type, show stall details for editing
+      setSelectedStall(stall);
+      setEditingStall(null);
+      setTypeSelectionStall(null);
+    }
+  };
+
+  const handleTypeSelection = async (stall: Stall, type: 'participant' | 'utility') => {
+    try {
+      const updatedStall = { ...stall, type };
+      await updateDoc(doc(db, 'stalls', stall.id), { type });
+      
+      setStalls(prev => {
+        const newStalls = prev.map(s => s.id === stall.id ? updatedStall : s);
+        
+        // Update stats based on new stalls array
+        const participantCount = newStalls.filter(s => s.type === 'participant').length;
+        const utilityCount = newStalls.filter(s => s.type === 'utility').length;
+        
+        setStats({
+          total: newStalls.length,
+          participant: participantCount,
+          utility: utilityCount
+        });
+        
+        return newStalls;
+      });
+      
+      setTypeSelectionStall(null);
+    } catch (err) {
+      console.error('Error updating stall type:', err);
+      setError('Failed to update stall type');
+    }
   };
 
   const handleEditStall = (stall: Stall) => {
@@ -239,10 +325,34 @@ export const ExhibitionStallManager = () => {
     }
   };
 
+  const testFirestoreConnection = async () => {
+    try {
+      console.log('Testing Firestore connection...');
+      const testDoc = await addDoc(collection(db, 'test'), {
+        test: true,
+        timestamp: new Date().toISOString()
+      });
+      console.log('Test document created:', testDoc.id);
+      await deleteDoc(doc(db, 'test', testDoc.id));
+      console.log('Test document deleted');
+      return true;
+    } catch (err) {
+      console.error('Firestore test failed:', err);
+      return false;
+    }
+  };
+
   const handleSaveStall = async () => {
     if (!editingStall) return;
 
     try {
+      // Test Firestore connection first
+      const connectionOk = await testFirestoreConnection();
+      if (!connectionOk) {
+        setError('Firestore connection failed');
+        return;
+      }
+
       // Convert selected images to base64
       const imagePromises = selectedImages.map(file => {
         return new Promise<string>((resolve) => {
@@ -256,23 +366,41 @@ export const ExhibitionStallManager = () => {
 
       const imageUrls = await Promise.all(imagePromises);
 
-      const updatedStall = {
+      // Prepare update object, convert Date to string, remove undefined fields
+      const updatedStall: any = {
         ...editingStall,
         images: imageUrls,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString(),
       };
+      // Handle createdAt field - convert to string if it's a Date
+      if (updatedStall.createdAt instanceof Date) {
+        updatedStall.createdAt = updatedStall.createdAt.toISOString();
+      } else if (typeof updatedStall.createdAt === 'string') {
+        updatedStall.createdAt = updatedStall.createdAt;
+      } else {
+        updatedStall.createdAt = new Date().toISOString();
+      }
 
-      await updateDoc(doc(db, 'stalls', editingStall.id), updatedStall);
+      if (!editingStall.id) {
+        setError('Stall ID missing!');
+        return;
+      }
+
+      // Deep clean the object
+      const cleanedStall = deepCleanObject(updatedStall);
+      console.log('Updating stall with data:', cleanedStall);
+
+      await updateDoc(doc(db, 'stalls', editingStall.id), cleanedStall);
       
       setStalls(prev => prev.map(stall => 
-        stall.id === editingStall.id ? updatedStall : stall
+        stall.id === editingStall.id ? { ...cleanedStall, id: editingStall.id } : stall
       ));
       
       setEditingStall(null);
       setSelectedImages([]);
     } catch (err) {
       setError('Failed to update stall');
-      console.error('Error updating stall:', err);
+      console.error('Error updating stall:', err, editingStall);
     }
   };
 
@@ -366,38 +494,6 @@ export const ExhibitionStallManager = () => {
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />
             </div>
-            
-            <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Participants Stalls:</label>
-          <input
-            type="number"
-            min="0"
-            max={totalStalls}
-            value={participantStalls}
-            onChange={(e) => {
-              setLastEdited("participant");
-              setParticipantStalls(Math.min(parseInt(e.target.value) || 0, totalStalls));
-            }}
-            className="w-full px-3 py-2 border rounded-lg text-sm"
-          />
-        </div>
-            
-          
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Utility Stalls:</label>
-          <input
-            type="number"
-            min="0"
-            max={totalStalls}
-            value={utilityStalls}
-            onChange={(e) => {
-              setLastEdited("utility");
-              setUtilityStalls(Math.min(parseInt(e.target.value) || 0, totalStalls));
-            }}
-            className="w-full px-3 py-2 border rounded-lg text-sm"
-          />
-        </div>
-
           </div>
           
           <div className="mt-4">
@@ -471,6 +567,7 @@ export const ExhibitionStallManager = () => {
                       >
                         <div className="text-xs font-medium">{stall.stallNumber}</div>
                         {getStallIcon(stall)}
+                        
                       </div>
                     );
                   })}
@@ -480,16 +577,6 @@ export const ExhibitionStallManager = () => {
           </div>
 
           {/* Legend */}
-          <div className="mt-6 flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-blue-500 rounded"></div>
-              <span>Participant Stall</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-purple-500 rounded"></div>
-              <span>Utility Stall</span>
-            </div>
-          </div>
         </div>
       )}
 
@@ -691,44 +778,59 @@ export const ExhibitionStallManager = () => {
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                  <input
-                    type="text"
+                  <select
                     value={editingStall.location?.state || ''}
                     onChange={(e) => setEditingStall({ 
                       ...editingStall, 
                       location: { 
                         state: e.target.value,
-                        district: editingStall.location?.district || '',
-                        block: editingStall.location?.block || ''
+                        district: '',
+                        block: ''
                       } 
                     })}
                     className="w-full px-3 py-2 border rounded-lg text-sm"
-                    placeholder="Enter state"
-                  />
+                  >
+                    <option value="">Select State</option>
+                    {getStates(processedIndiaData).map(state => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
-                  <input
-                    type="text"
+                  <select
                     value={editingStall.location?.district || ''}
                     onChange={(e) => setEditingStall({ 
                       ...editingStall, 
                       location: { 
                         state: editingStall.location?.state || '',
                         district: e.target.value,
-                        block: editingStall.location?.block || ''
+                        block: ''
                       } 
                     })}
                     className="w-full px-3 py-2 border rounded-lg text-sm"
-                    placeholder="Enter district"
-                  />
+                    disabled={!editingStall.location?.state}
+                  >
+                    <option value="">Select District</option>
+                    {editingStall.location?.state && getDistricts(processedIndiaData, editingStall.location.state).length > 0 ? (
+                      getDistricts(processedIndiaData, editingStall.location.state).map(district => (
+                        <option key={district} value={district}>{district}</option>
+                      ))
+                    ) : editingStall.location?.state ? (
+                      <option value="" disabled>No districts available for {editingStall.location.state}</option>
+                    ) : null}
+                  </select>
+                  {editingStall.location?.state && getDistricts(processedIndiaData, editingStall.location.state).length === 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Districts for {editingStall.location.state} are not available in the current data.
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Block</label>
-                  <input
-                    type="text"
+                  <select
                     value={editingStall.location?.block || ''}
                     onChange={(e) => setEditingStall({ 
                       ...editingStall, 
@@ -739,11 +841,20 @@ export const ExhibitionStallManager = () => {
                       } 
                     })}
                     className="w-full px-3 py-2 border rounded-lg text-sm"
-                    placeholder="Enter block"
-                  />
+                    disabled={!editingStall.location?.district}
+                  >
+                    <option value="">Select Block</option>
+                    {editingStall.location?.district && editingStall.location?.state && getBlocks(processedIndiaData, editingStall.location.state, editingStall.location.district).length > 0 ? (
+                      getBlocks(processedIndiaData, editingStall.location.state, editingStall.location.district).map(block => (
+                        <option key={block} value={block}>{block}</option>
+                      ))
+                    ) : editingStall.location?.district ? (
+                      <option value="" disabled>No blocks available for {editingStall.location.district}</option>
+                    ) : null}
+                  </select>
                 </div>
 
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Products</label>
                   <input
                     type="text"
@@ -822,6 +933,45 @@ export const ExhibitionStallManager = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Type Selection Popup */}
+      {typeSelectionStall && (
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Select Stall Type - {typeSelectionStall.stallNumber}</h3>
+            <button
+              onClick={() => setTypeSelectionStall(null)}
+              className="text-gray-600 hover:text-gray-700"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => handleTypeSelection(typeSelectionStall, 'participant')}
+              className="p-4 border-2 border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+            >
+              <div className="text-center">
+                <div className="text-2xl mb-2">👥</div>
+                <div className="font-semibold text-blue-600">Participant</div>
+                <div className="text-sm text-gray-600">For product stalls</div>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => handleTypeSelection(typeSelectionStall, 'utility')}
+              className="p-4 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-colors"
+            >
+              <div className="text-center">
+                <div className="text-2xl mb-2">⚙️</div>
+                <div className="font-semibold text-gray-600">Utility</div>
+                <div className="text-sm text-gray-600">For services</div>
+              </div>
+            </button>
           </div>
         </div>
       )}

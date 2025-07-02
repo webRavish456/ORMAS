@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getExhibitionLayout, type Stall } from '../services/exhibitionService';
 
 interface ExhibitionMapProps {
@@ -21,6 +21,8 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
     stats: { total: number; participant: number; utility: number };
   }>({ rows: 0, columns: 0, stalls: [], stats: { total: 0, participant: 0, utility: 0 } });
   const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchLayout = async () => {
@@ -74,44 +76,37 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
     <div className="space-y-4">
       {/* Statistics - Only show if requested */}
       {showStats && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="text-2xl font-bold text-navy-600">{layout.stats.total}</div>
-            <div className="text-sm text-gray-600">Total Stalls</div>
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+            <div className="bg-white p-4 rounded-lg shadow-sm text-center w-full">
+              <div className="font-bold text-navy-600 text-base md:text-xl">{layout.stats.total}</div>
+              <div className="text-gray-600 text-xs md:text-base">Total Stalls</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm text-center w-full">
+              <div className="font-bold text-blue-600 text-base md:text-xl">{layout.stats.participant}</div>
+              <div className="text-gray-600 text-xs md:text-base">Participant</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm text-center w-full">
+              <div className="font-bold text-purple-600 text-base md:text-xl">{layout.stats.utility}</div>
+              <div className="text-gray-600 text-xs md:text-base">Utility</div>
+            </div>
+            <div className="flex justify-center w-full">
+              <button
+                onClick={() => navigate('/stalls')}
+                className="w-full h-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow transition-colors flex items-center w-fit justify-center gap-2 px-4 py-2"
+              >
+                <span className="text-sm md:text-base">Click on me</span>
+              </button>
+            </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="text-2xl font-bold text-blue-600">{layout.stats.participant}</div>
-            <div className="text-sm text-gray-600">Participant</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="text-2xl font-bold text-purple-600">{layout.stats.utility}</div>
-            <div className="text-sm text-gray-600">Utility</div>
-          </div>
-        </div>
+        </>
       )}
 
       {/* Header boxes */}
-      <div className="grid grid-cols-1 gap-2 mb-4">
-        <Link 
-          to="/stalls"
-          className={`px-2 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded text-center ${compact ? 'text-xs' : 'text-sm'} hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer`}
-        >
-          <span className="text-blue-700 dark:text-blue-300 font-medium">
-            Totals stalls ({layout.stats.total})
-          </span>
-        </Link>
-        {/* <Link 
-          to="/utility-stalls"
-          className={`px-2 py-1 bg-orange-50 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700 rounded text-center ${compact ? 'text-xs' : 'text-sm'} hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors cursor-pointer`}
-        >
-          <span className="text-orange-700 dark:text-orange-300 font-medium">
-            Utility stalls ({layout.stats.utility})
-          </span>
-        </Link> */}
-      </div>
+    
 
       {/* Exhibition Map Grid */}
-      <div className={`overflow-auto max-w-full scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800 ${compact ? 'max-h-32 sm:max-h-48' : 'max-h-48 sm:max-h-64 md:max-h-80'}`}>
+      <div className={`overflow-auto max-w-full scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800 ${compact ? 'max-h-32 sm:max-h-48' : 'max-h-96 sm:max-h-[32rem] md:max-h-[40rem]'}`}>
         <div className="inline-block min-w-full">
           {/* Column Headers */}
           <div className="flex" style={{ minWidth: compact ? `${(layout.columns + 1) * 32}px` : `${(layout.columns + 1) * 64}px` }}>

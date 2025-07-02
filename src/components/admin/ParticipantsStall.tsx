@@ -9,8 +9,17 @@ import {
   Users,
   MapPin,
   Package,
-  Image
+  Image,
+  Shirt,
+  Palette,
+  Leaf,
+  UtensilsCrossed,
+  Sofa,
+  Scissors,
+  Briefcase,
+  Gem
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface Stall {
   id: string;
@@ -44,6 +53,18 @@ const STALL_CATEGORIES = [
   'Leather Products',
   'Jewellery'
 ];
+
+// Category to icon mapping
+const CATEGORY_ICONS: Record<string, any> = {
+  Handloom: Shirt,
+  Handicraft: Palette,
+  'Minor Forest Products (MFP)': Leaf,
+  'Food & Spices': UtensilsCrossed,
+  'Home Furnishing': Sofa,
+  'Woolen Knit Wear': Scissors,
+  'Leather Products': Briefcase,
+  Jewellery: Gem,
+};
 
 export const ParticipantsStall = () => {
   const [participantStalls, setParticipantStalls] = useState<Stall[]>([]);
@@ -165,6 +186,35 @@ export const ParticipantsStall = () => {
     return 0;
   };
 
+  const getStallIcon = (stall: Stall) => {
+    if (stall.type === 'participant' && stall.category && CATEGORY_ICONS[stall.category]) {
+      const Icon = CATEGORY_ICONS[stall.category];
+      return <Icon className="w-5 h-5 mb-1 inline-block align-middle" />;
+    }
+    return null;
+  };
+
+  const exportToExcel = () => {
+    // Prepare data for export
+    const data = participantStalls.map(stall => ({
+      'Stall No': stall.stallNumber,
+      'Name': stall.name || '',
+      'Category': stall.category || '',
+      'Description': stall.description || '',
+      'State': stall.location?.state || '',
+      'District': stall.location?.district || '',
+      'Block': stall.location?.block || '',
+      'Products': (stall.products || []).join(', '),
+      'Image URLs': (stall.images || []).join(', '),
+      'Created At': typeof stall.createdAt === 'string' ? stall.createdAt : stall.createdAt?.toISOString?.() || '',
+      'Updated At': typeof stall.updatedAt === 'string' ? stall.updatedAt : stall.updatedAt?.toISOString?.() || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'ParticipantStalls');
+    XLSX.writeFile(wb, 'participant_stalls.xlsx');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -180,6 +230,12 @@ export const ParticipantsStall = () => {
         <div className="text-sm text-gray-600">
           Total: {participantStalls.length} stalls
         </div>
+        <button
+          onClick={exportToExcel}
+          className="ml-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium"
+        >
+          Export to Excel
+        </button>
       </div>
 
       {/* Participant Stalls Table */}
@@ -226,18 +282,14 @@ export const ParticipantsStall = () => {
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
                         <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
-                          <Users className="h-5 w-5 text-white" />
+                        {getStallIcon(stall)}
                         </div>
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {stall.name || 'Unnamed Stall'}
+                          <div>{stall.name}</div>
+                          <div className="text-xs text-gray-500">{stall.description}</div>
                         </div>
-                        {stall.description && (
-                          <div className="text-xs text-gray-400 mt-1">
-                            {stall.description.substring(0, 50)}...
-                          </div>
-                        )}
                       </div>
                     </div>
                   </td>
