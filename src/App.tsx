@@ -26,14 +26,7 @@ function App() {
           <Route path="/map" element={<ExhibitionMapPage />} />
           <Route path="/stalls" element={<AllStallsPage />} />
           <Route path="/administrator" element={<Administrator />} />
-          <Route 
-            path="/data" 
-            element={
-              <ProtectedRoute>
-                <Data />
-              </ProtectedRoute>
-            } 
-          />
+          <Route path="/data" element={<Data />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Shield, Settings } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { PasswordGate } from '../components/admin/PasswordGate';
@@ -11,6 +11,7 @@ export const Administrator = () => {
   const { isAdmin, setIsAdmin, logout } = useTheme();
   const [localIsAuthenticated, setLocalIsAuthenticated] = useState(isAdmin);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Set global admin state when locally authenticated
   useEffect(() => {
@@ -18,8 +19,6 @@ export const Administrator = () => {
       setIsAdmin(true);
     }
   }, [localIsAuthenticated, setIsAdmin]);
-
-
 
   const handleAuthenticate = () => {
     setLocalIsAuthenticated(true);
@@ -29,31 +28,11 @@ export const Administrator = () => {
   const handleLogout = () => {
     setLocalIsAuthenticated(false);
     logout();
+    navigate('/'); // Redirect to home page
   };
 
   if (!localIsAuthenticated) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-900 dark:to-dark-800 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md"
-          >
-            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-dark-700">
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
-                  <Shield className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Administrator Access</h2>
-                <p className="text-gray-600 dark:text-gray-300">Secure portal for exhibition management</p>
-              </div>
-              <PasswordGate onAuthenticate={handleAuthenticate} />
-            </div>
-          </motion.div>
-        </div>
-      </Layout>
-    );
+    return <PasswordGate onAuthenticate={handleAuthenticate} accessType="admin" />;
   }
 
   return (
