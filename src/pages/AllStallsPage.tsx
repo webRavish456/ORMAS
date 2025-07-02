@@ -12,7 +12,15 @@ import {
   Building2,
   ChevronDown,
   Eye,
-  Search
+  Search,
+  Shirt,
+  Palette,
+  Leaf,
+  UtensilsCrossed,
+  Sofa,
+  Scissors,
+  Briefcase,
+  Gem
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -47,6 +55,25 @@ interface Filters {
   search: string;
 }
 
+const CATEGORY_ICONS: Record<string, any> = {
+  Handloom: Shirt,
+  Handicraft: Palette,
+  'Minor Forest Products (MFP)': Leaf,
+  'Food & Spices': UtensilsCrossed,
+  'Home Furnishing': Sofa,
+  'Woolen Knit Wear': Scissors,
+  'Leather Products': Briefcase,
+  Jewellery: Gem,
+};
+
+const getCategoryIcon = (category?: string) => {
+  if (category && CATEGORY_ICONS[category]) {
+    const Icon = CATEGORY_ICONS[category];
+    return <Icon className="w-3 h-3 mr-1" />;
+  }
+  return <Users className="w-3 h-3 mr-1" />;
+};
+
 const getUtilityIcon = (utilityType?: string) => {
   switch (utilityType) {
     case 'restroom': return '🚻';
@@ -80,12 +107,25 @@ const AllStallsPage = () => {
     try {
       setLoading(true);
       const stallsSnapshot = await getDocs(collection(db, 'stalls'));
-      const stalls = stallsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      })) as Stall[];
+      const stalls = stallsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAtRaw = data.createdAt;
+        const updatedAtRaw = data.updatedAt;
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: createdAtRaw
+            ? typeof createdAtRaw.toDate === 'function'
+              ? createdAtRaw.toDate()
+              : new Date(createdAtRaw)
+            : new Date(),
+          updatedAt: updatedAtRaw
+            ? typeof updatedAtRaw.toDate === 'function'
+              ? updatedAtRaw.toDate()
+              : new Date(updatedAtRaw)
+            : new Date(),
+        };
+      }) as Stall[];
       
       setAllStalls(stalls);
     } catch (err) {
@@ -342,123 +382,125 @@ const AllStallsPage = () => {
         </div>
 
         {/* Stalls Table */}
-        <div className="bg-white dark:bg-dark-900 rounded-xl shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-dark-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Stall Info
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Category/Utility
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Products
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-dark-900 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredStalls.map((stall) => (
-                  <tr key={stall.id} className="hover:bg-gray-50 dark:hover:bg-dark-800">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          Stall {stall.stallNumber}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          #{extractStallNumber(stall.stallNumber)}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {stall.name || (stall.type === 'participant' ? 'Unnamed Stall' : 'Unnamed Utility')}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        stall.type === 'participant' 
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                          : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-                      }`}>
-                        {stall.type === 'participant' ? (
-                          <>
-                            <Users className="w-3 h-3 mr-1" />
-                            Participant
-                          </>
-                        ) : (
-                          <>
-                            <Settings className="w-3 h-3 mr-1" />
-                            Utility
-                          </>
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {stall.location ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          <div>{stall.location.state}</div>
-                          <div className="text-gray-500 dark:text-gray-400">
-                            {stall.location.district}, {stall.location.block}
+        {filteredStalls.length === 0 ? (
+          <div className="bg-white dark:bg-dark-900 rounded-xl shadow-lg p-8 text-center text-gray-500 text-lg">
+            No stalls to display
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-dark-900 rounded-xl shadow-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-dark-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Stall Info
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Category/Utility
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Products
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-dark-900 divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredStalls.map((stall) => (
+                    <tr key={stall.id} className="hover:bg-gray-50 dark:hover:bg-dark-800">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            Stall {stall.stallNumber}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            #{extractStallNumber(stall.stallNumber)}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {stall.name}
                           </div>
                         </div>
-                      ) : (
-                        <span className="text-sm text-gray-500 dark:text-gray-400">Not specified</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {stall.type === 'participant' ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {stall.category || 'No category'}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {stall.utilityType ? (
-                            <span className="flex items-center">
-                              <span className="mr-1">{getUtilityIcon(stall.utilityType)}</span>
-                              {stall.utilityType}
-                            </span>
-                          ) : (
-                            'No type specified'
-                          )}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {stall.type === 'participant' && stall.products && stall.products.length > 0 ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {stall.products.slice(0, 2).join(', ')}
-                          {stall.products.length > 2 && ` +${stall.products.length - 2} more`}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {stall.type === 'participant' ? 'No products' : 'N/A'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => setSelectedStall(stall)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {stall.type === 'participant' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                            {getCategoryIcon(stall.category)}
+                            Participant
+                          </span>
+                        ) : stall.type === 'utility' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                            <Settings className="w-3 h-3 mr-1" />
+                            Utility
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {stall.location ? (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            <div>{stall.location.state}</div>
+                            <div className="text-gray-500 dark:text-gray-400">
+                              {stall.location.district}, {stall.location.block}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Not specified</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {stall.type === 'participant' ? (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {stall.category || 'No category'}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {stall.utilityType ? (
+                              <span className="flex items-center">
+                                <span className="mr-1">{getUtilityIcon(stall.utilityType)}</span>
+                                {stall.utilityType}
+                              </span>
+                            ) : (
+                              'No type specified'
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {stall.type === 'participant' && stall.products && stall.products.length > 0 ? (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {stall.products.slice(0, 2).join(', ')}
+                            {stall.products.length > 2 && ` +${stall.products.length - 2} more`}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {stall.type === 'participant' ? 'No products' : 'N/A'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => setSelectedStall(stall)}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Empty State */}
         {filteredStalls.length === 0 && (
@@ -490,7 +532,7 @@ const AllStallsPage = () => {
                         : 'bg-purple-500'
                     }`}>
                       {selectedStall.type === 'participant' ? (
-                        <Users className="w-6 h-6" />
+                        getCategoryIcon(selectedStall.category && selectedStall.category)
                       ) : (
                         <Settings className="w-6 h-6" />
                       )}

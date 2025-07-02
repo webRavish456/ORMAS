@@ -2,12 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { Users, Settings } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getExhibitionLayout, type Stall } from '../services/exhibitionService';
+import { categories as PRODUCT_CATEGORIES } from '../services/productService';
+import { Shirt, Palette, Leaf, UtensilsCrossed, Sofa, Scissors, Briefcase, Gem } from 'lucide-react';
 
 interface ExhibitionMapProps {
   compact?: boolean; // For navbar display
   showStats?: boolean;
   onStallClick?: (stall: Stall) => void;
 }
+
+// Category color mapping for participant stalls
+const CATEGORY_COLORS: Record<string, string> = {
+  Handloom: 'bg-indigo-500',
+  Handicraft: 'bg-yellow-500',
+  'Minor Forest Products (MFP)': 'bg-green-600',
+  'Food & Spices': 'bg-red-500',
+  'Home Furnishing': 'bg-pink-500',
+  'Woolen Knit Wear': 'bg-blue-400',
+  'Leather Products': 'bg-amber-700',
+  Jewellery: 'bg-rose-500',
+};
+
+// Category to icon mapping
+const CATEGORY_ICONS: Record<string, any> = {
+  Handloom: Shirt,
+  Handicraft: Palette,
+  'Minor Forest Products (MFP)': Leaf,
+  'Food & Spices': UtensilsCrossed,
+  'Home Furnishing': Sofa,
+  'Woolen Knit Wear': Scissors,
+  'Leather Products': Briefcase,
+  Jewellery: Gem,
+};
 
 export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({ 
   compact = false, 
@@ -21,6 +47,8 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
     stats: { total: number; participant: number; utility: number };
   }>({ rows: 0, columns: 0, stalls: [], stats: { total: 0, participant: 0, utility: 0 } });
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedBlock, setSelectedBlock] = useState('');
 
   const navigate = useNavigate();
 
@@ -44,16 +72,38 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
   };
 
   const getStallColor = (stall: Stall): string => {
+    if (!stall || !stall.type) return 'bg-gray-400';
     switch (stall.type) {
-      case 'participant': return compact ? 'bg-blue-500' : 'bg-blue-500 hover:bg-blue-600';
-      case 'utility': return compact ? 'bg-purple-500' : 'bg-purple-500 hover:bg-purple-600';
-      default: return compact ? 'bg-blue-500' : 'bg-blue-500 hover:bg-blue-600';
+      case 'participant':
+        return stall.category && CATEGORY_COLORS[stall.category]
+          ? CATEGORY_COLORS[stall.category]
+          : 'bg-blue-500';
+      case 'utility':
+        return 'bg-purple-600';
+      default:
+        return 'bg-gray-400';
     }
   };
 
   const getStallIcon = (stall: Stall) => {
-    if (stall.type === 'utility') return <Settings className={compact ? "w-2 h-2" : "w-4 h-4"} />;
-    return <Users className={compact ? "w-2 h-2" : "w-4 h-4"} />;
+    if (stall && stall.type === 'participant' && stall.category && CATEGORY_ICONS[stall.category]) {
+      const Icon = CATEGORY_ICONS[stall.category];
+      return <Icon className="w-5 h-5 mb-1" />;
+    }
+   
+    return null;
+  };
+
+  // Get unique blocks from stalls
+  const uniqueBlocks = Array.from(new Set(layout.stalls.map(s => s.location?.block).filter(Boolean)));
+
+  // Helper to check if a stall matches the filter
+  const isFiltered = (stall: Stall | undefined) => {
+    if (!stall) return false;
+    let match = true;
+    if (selectedCategory) match = match && stall.category === selectedCategory;
+    if (selectedBlock) match = match && stall.location?.block === selectedBlock;
+    return match;
   };
 
   if (loading) {
@@ -102,8 +152,38 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
         </>
       )}
 
-      {/* Header boxes */}
-    
+      {/* Filters and Search */}
+      <div className="flex gap-4 mb-4 items-center">
+        <select
+          value={selectedCategory}
+          onChange={e => setSelectedCategory(e.target.value)}
+          className="border rounded px-3 py-2"
+        >
+          <option value="">All Categories</option>
+          {PRODUCT_CATEGORIES.map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+        <select
+          value={selectedBlock}
+          onChange={e => setSelectedBlock(e.target.value)}
+          className="border rounded px-3 py-2"
+        >
+          <option value="">All Cities</option>
+          {uniqueBlocks.map(block => (
+            <option key={block} value={block}>{block}</option>
+          ))}
+        </select>
+        <button
+          onClick={() => {
+            setSelectedCategory('');
+            setSelectedBlock('');
+          }}
+          className="ml-2 px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm"
+        >
+          Clear Filters
+        </button>
+      </div>
 
       {/* Exhibition Map Grid */}
       <div className={`overflow-auto max-w-full scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800 ${compact ? 'max-h-32 sm:max-h-48' : 'max-h-96 sm:max-h-[32rem] md:max-h-[40rem]'}`}>
@@ -120,43 +200,33 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
 
           {/* Stall Grid */}
           {Array.from({ length: layout.rows }, (_, row) => (
-            <div key={row} className="flex" style={{ minWidth: compact ? `${(layout.columns + 1) * 32}px` : `${(layout.columns + 1) * 64}px` }}>
-              {/* Row Header */}
-              <div className={`${compact ? 'w-6 h-8' : 'w-12 h-16'} flex items-center justify-center text-xs font-medium text-gray-500 flex-shrink-0`}>
+            <div key={row} className="flex">
+              <div className="w-12 h-16 flex items-center justify-center text-xs font-medium text-gray-500">
                 {String.fromCharCode(65 + row)}
               </div>
-              
-              {/* Stalls */}
               {Array.from({ length: layout.columns }, (_, col) => {
                 const stall = getStallAtPosition(row, col);
-                if (!stall) {
+                const stallNumber = `${String.fromCharCode(65 + row)}${col + 1}`;
+                // Only show the stall if it matches the filter
+                const matches = stall && isFiltered(stall);
+                if (!stall || !matches) {
+                  // Render gray/empty box if no stall or doesn't match filter
                   return (
-                    <div 
-                      key={col} 
-                      className={`${compact ? 'w-8 h-8' : 'w-16 h-16'} border border-gray-200 dark:border-gray-700 flex-shrink-0`} 
-                    />
+                    <div
+                      key={col}
+                      className="w-16 h-16 border border-gray-300 flex flex-col items-center justify-center bg-gray-400 text-white opacity-40 cursor-default"
+                    >
+                      <div className="text-xs font-medium">{stallNumber}</div>
+                    </div>
                   );
                 }
-
                 return (
                   <div
                     key={col}
-                    onClick={() => onStallClick?.(stall)}
-                    className={`
-                      ${compact ? 'w-8 h-8' : 'w-16 h-16'} 
-                      border border-gray-300 dark:border-gray-600 cursor-pointer
-                      flex flex-col items-center justify-center
-                      ${getStallColor(stall)} text-white
-                      transition-all duration-200
-                      ${!compact && 'hover:scale-105 hover:shadow-lg'}
-                      flex-shrink-0
-                    `}
-                    title={`${stall.stallNumber} - ${stall.type} stall${stall.name ? ` (${stall.name})` : ''}`}
+                    className={`w-16 h-16 border border-gray-300 cursor-pointer flex flex-col items-center justify-center ${getStallColor(stall)} text-white hover:opacity-80 transition-opacity`}
                   >
-                    <div className={`${compact ? 'text-xs' : 'text-xs'} font-medium`}>
-                      {stall.stallNumber}
-                    </div>
-                    {!compact && getStallIcon(stall)}
+                    <div className="text-xs font-medium">{stall.stallNumber}</div>
+                    {getStallIcon(stall)}
                   </div>
                 );
               })}
@@ -164,18 +234,7 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
           ))}
         </div>
       </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-blue-500 rounded"></div>
-          <span>Participant Stall</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-purple-500 rounded"></div>
-          <span>Utility Stall</span>
-        </div>
-      </div>
+   
     </div>
   );
 }; 

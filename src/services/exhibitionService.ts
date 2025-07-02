@@ -68,12 +68,19 @@ const stallsCollection = collection(db, 'stalls');
 export const getExhibitionStalls = async (): Promise<Stall[]> => {
   try {
     const snapshot = await getDocs(stallsCollection);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-    } as Stall));
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt && typeof data.createdAt.toDate === 'function'
+          ? data.createdAt.toDate()
+          : (typeof data.createdAt === 'string' ? new Date(data.createdAt) : new Date()),
+        updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function'
+          ? data.updatedAt.toDate()
+          : (typeof data.updatedAt === 'string' ? new Date(data.updatedAt) : new Date()),
+      } as Stall;
+    });
   } catch (error) {
     console.error('Error fetching stalls:', error);
     return [];

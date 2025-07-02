@@ -11,6 +11,7 @@ import {
   Package,
   Image
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface Stall {
   id: string;
@@ -154,6 +155,21 @@ export const UtilityStalls = () => {
     return 0;
   };
 
+  const exportToExcel = () => {
+    // Prepare data for export
+    const data = utilityStalls.map(stall => ({
+      'Stall No': stall.stallNumber,
+      'Name': stall.name || '',
+      'Description': stall.description || '',
+      'Created At': typeof stall.createdAt === 'string' ? stall.createdAt : stall.createdAt?.toISOString?.() || '',
+      'Updated At': typeof stall.updatedAt === 'string' ? stall.updatedAt : stall.updatedAt?.toISOString?.() || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'UtilityStalls');
+    XLSX.writeFile(wb, 'utility_stalls.xlsx');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -169,6 +185,12 @@ export const UtilityStalls = () => {
         <div className="text-sm text-gray-600">
           Total: {utilityStalls.length} stalls
         </div>
+        <button
+          onClick={exportToExcel}
+          className="ml-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium"
+        >
+          Export to Excel
+        </button>
       </div>
 
       {/* Utility Stalls Table */}

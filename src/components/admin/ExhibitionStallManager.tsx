@@ -162,7 +162,7 @@ export const ExhibitionStallManager = () => {
         const utilityCount = existingStalls.filter(s => s.type === 'utility').length;
         
         setStats({
-          total: existingStalls.length,
+          total: maxRow >= 0 && maxColumn >= 0 ? (maxRow + 1) * (maxColumn + 1) : 0,
           participant: participantCount,
           utility: utilityCount
         });
@@ -224,14 +224,10 @@ export const ExhibitionStallManager = () => {
       setStallsCreated(true);
   
       // Set stats: only total, participant and utility are 0 initially
-      setStats({
-        total: stallsWithIds.length,
-        participant: 0,
-        utility: 0
-      });
+      updateStats(stallsWithIds, rows, columns, setStats);
   
     } catch (err) {
-      console.error('Error creating stalls:', err, rows, columns, initialStalls);
+      console.error('Error creating stalls:', err, rows, columns, initialStalls.length);
       setError('Failed to create stalls');
     } finally {
       setLoading(false);
@@ -285,25 +281,35 @@ export const ExhibitionStallManager = () => {
 
   const handleTypeSelection = async (stall: Stall, type: 'participant' | 'utility') => {
     try {
+      if (!stall.id) {
+        // New stall (gray box): create new document
+        const newStall = {
+          row: stall.row,
+          column: stall.column,
+          stallNumber: stall.stallNumber,
+          type,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        const docRef = await addDoc(collection(db, 'stalls'), newStall);
+        setStalls(prev => {
+          const updated = [...prev, { ...newStall, id: docRef.id }];
+          // Update stats
+          updateStats(updated, rows, columns, setStats);
+          setTypeSelectionStall(null);
+          return updated;
+        });
+        return;
+      }
+      // Existing stall: update type
       const updatedStall = { ...stall, type };
       await updateDoc(doc(db, 'stalls', stall.id), { type });
-      
       setStalls(prev => {
         const newStalls = prev.map(s => s.id === stall.id ? updatedStall : s);
-        
         // Update stats based on new stalls array
-        const participantCount = newStalls.filter(s => s.type === 'participant').length;
-        const utilityCount = newStalls.filter(s => s.type === 'utility').length;
-        
-        setStats({
-          total: newStalls.length,
-          participant: participantCount,
-          utility: utilityCount
-        });
-        
+        updateStats(newStalls, rows, columns, setStats);
         return newStalls;
       });
-      
       setTypeSelectionStall(null);
     } catch (err) {
       console.error('Error updating stall type:', err);
@@ -552,8 +558,23 @@ export const ExhibitionStallManager = () => {
                   {/* Stalls */}
                   {Array.from({ length: columns }, (_, col) => {
                     const stall = getStallAtPosition(row, col);
-                    if (!stall) return <div key={col} className="w-16 h-16 border border-gray-200" />;
-
+                    if (!stall) {
+                      // Render gray clickable box for deleted/initial stalls
+                      return (
+                        <div
+                          key={col}
+                          onClick={() => handleStallClick({
+                            id: '',
+                            row,
+                            column: col,
+                            stallNumber: `${String.fromCharCode(65 + row)}${col + 1}`
+                          } as any)}
+                          className="w-16 h-16 border border-gray-300 cursor-pointer flex flex-col items-center justify-center bg-gray-400 text-white hover:opacity-80 transition-opacity"
+                        >
+                          <div className="text-xs font-medium">{`${String.fromCharCode(65 + row)}${col + 1}`}</div>
+                        </div>
+                      );
+                    }
                     return (
                       <div
                         key={col}
@@ -984,3 +1005,13 @@ export const ExhibitionStallManager = () => {
     </div>
   );
 };
+
+function updateStats(stalls: Stall[], rows: number, columns: number, setStats: any) {
+  const participantCount = stalls.filter(s => s.type === 'participant').length;
+  const utilityCount = stalls.filter(s => s.type === 'utility').length;
+  setStats({
+    total: rows * columns,
+    participant: participantCount,
+    utility: utilityCount
+  });
+}
