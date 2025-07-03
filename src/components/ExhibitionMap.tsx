@@ -77,7 +77,7 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
       case 'participant':
         return stall.category && CATEGORY_COLORS[stall.category]
           ? CATEGORY_COLORS[stall.category]
-          : 'bg-blue-500';
+          : 'bg-blue-400';
       case 'utility':
         return 'bg-purple-600';
       default:
@@ -122,6 +122,8 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
     );
   }
 
+  const total = layout.rows * layout.columns; // Ya jitne stalls create kiye the, unka count
+
   return (
     <div className="space-y-4">
       {/* Statistics - Only show if requested */}
@@ -129,7 +131,7 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
             <div className="bg-white p-4 rounded-lg shadow-sm text-center w-full">
-              <div className="font-bold text-navy-600 text-base md:text-xl">{layout.stats.total}</div>
+              <div className="font-bold text-navy-600 text-base md:text-xl">{total}</div>
               <div className="text-gray-600 text-xs md:text-base">Total Stalls</div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm text-center w-full">
@@ -153,7 +155,7 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
       )}
 
       {/* Filters and Search */}
-      <div className="flex gap-4 mb-4 items-center">
+      <div className="flex gap-4 mb-4 flex-wrap items-center">
         <select
           value={selectedCategory}
           onChange={e => setSelectedCategory(e.target.value)}

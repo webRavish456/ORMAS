@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase/config';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, deleteField } from 'firebase/firestore';
 import { 
   Users, 
   Wrench, 
@@ -24,7 +24,9 @@ import {
 import rawIndiaData from '../../data/india_state_district_block.json';
 import { processIndiaData, getStates, getDistricts, getBlocks } from '../../utils/indiaDataProcessor';
 
-
+const CLOUDINARY_UPLOAD_PRESET = 'stalls'; // apna unsigned preset ka naam
+const CLOUDINARY_CLOUD_NAME = 'dywpuv3jk';
+const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
 interface Stall {
   id: string;
@@ -108,6 +110,21 @@ function deepCleanObject(obj: any): any {
   }
   return obj;
 }
+
+const uploadToCloudinary = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await response.json();
+  if (!data.secure_url) {
+    throw new Error('Cloudinary upload failed: ' + JSON.stringify(data));
+  }
+  return data.secure_url;
+};
 
 export const ExhibitionStallManager = () => {
   const [stalls, setStalls] = useState<Stall[]>([]);
@@ -292,13 +309,15 @@ export const ExhibitionStallManager = () => {
           updatedAt: new Date().toISOString(),
         };
         const docRef = await addDoc(collection(db, 'stalls'), newStall);
+        const createdStall = { ...newStall, id: docRef.id };
         setStalls(prev => {
-          const updated = [...prev, { ...newStall, id: docRef.id }];
+          const updated = [...prev, createdStall];
           // Update stats
           updateStats(updated, rows, columns, setStats);
           setTypeSelectionStall(null);
           return updated;
         });
+        setEditingStall(createdStall); // Open edit form immediately
         return;
       }
       // Existing stall: update type
@@ -311,6 +330,7 @@ export const ExhibitionStallManager = () => {
         return newStalls;
       });
       setTypeSelectionStall(null);
+      setEditingStall(updatedStall); // Open edit form immediately
     } catch (err) {
       console.error('Error updating stall type:', err);
       setError('Failed to update stall type');
@@ -359,18 +379,13 @@ export const ExhibitionStallManager = () => {
         return;
       }
 
-      // Convert selected images to base64
-      const imagePromises = selectedImages.map(file => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            resolve(e.target?.result as string);
-          };
-          reader.readAsDataURL(file);
-        });
-      });
-
-      const imageUrls = await Promise.all(imagePromises);
+      let imageUrls = editingStall.images || [];
+      // Nayi images ko Cloudinary par upload karo
+      if (selectedImages.length > 0) {
+        const uploadPromises = selectedImages.map(file => uploadToCloudinary(file));
+        const cloudinaryUrls = await Promise.all(uploadPromises);
+        imageUrls = cloudinaryUrls; // Sirf nayi images ke URLs save karo
+      }
 
       // Prepare update object, convert Date to string, remove undefined fields
       const updatedStall: any = {
@@ -410,7 +425,30 @@ export const ExhibitionStallManager = () => {
     }
   };
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = async () => {
+    if (editingStall && editingStall.id) {
+      // Firestore se type aur related fields hatao
+      await updateDoc(doc(db, 'stalls', editingStall.id), {
+        type: deleteField(),
+        name: deleteField(),
+        description: deleteField(),
+        category: deleteField(),
+        utilityType: deleteField(),
+        capacity: deleteField(),
+        location: deleteField(),
+        products: deleteField(),
+        images: deleteField(),
+      });
+
+      // Local state mein bhi blank karo
+      setStalls(prev =>
+        prev.map(stall =>
+          stall.id === editingStall.id
+            ? { ...stall, type: undefined, name: undefined, description: undefined, category: undefined, utilityType: undefined, capacity: undefined, location: undefined, products: undefined, images: undefined }
+            : stall
+        )
+      );
+    }
     setEditingStall(null);
     setSelectedImages([]);
   };

@@ -6,6 +6,8 @@ import { Camera, Plus, X, RotateCw } from 'lucide-react';
 import productCategories from '../../data/Product Category.json';
 import odishaMapping from '../../data/odisha_mapping.json';
 import { indianStates, unionTerritories } from '../../constants/locationConstants';
+import indiaRawData from '../../data/india_state_district_block.json';
+import { processIndiaData, getStates, getDistricts, getBlocks } from '../../utils/indiaDataProcessor';
 
 interface Participant {
   name: string;
@@ -73,7 +75,10 @@ export const ParticipantRegistration = () => {
   const [showWebcam, setShowWebcam] = useState(false);
   const [captureType, setCaptureType] = useState<CaptureType | undefined>(undefined);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [isOdisha, setIsOdisha] = useState(true);
+  const [processedIndiaData, setProcessedIndiaData] = useState<any>(null);
+  const [allIndiaState, setAllIndiaState] = useState('');
+  const [allIndiaDistrict, setAllIndiaDistrict] = useState('');
+  const [allIndiaBlock, setAllIndiaBlock] = useState('');
   const webcamRef = useRef<Webcam>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -85,6 +90,10 @@ export const ParticipantRegistration = () => {
 
   useEffect(() => {
     fetchExhibitions();
+  }, []);
+
+  useEffect(() => {
+    setProcessedIndiaData(processIndiaData(indiaRawData));
   }, []);
 
   useEffect(() => {
@@ -250,10 +259,6 @@ export const ParticipantRegistration = () => {
       setError('Please enter block');
       return false;
     }
-    if (isOdisha && !registration.gramPanchayat) {
-      setError('Please select gram panchayat');
-      return false;
-    }
     if (registration.organizationType === 'Others' && !registration.otherOrganization) {
       setError('Please specify organization type');
       return false;
@@ -301,7 +306,6 @@ export const ParticipantRegistration = () => {
       setSuccess(true);
       // Reset form after successful submission
       setRegistration(initialRegistration);
-      setIsOdisha(true);
       setTimeout(() => {
         setSuccess(false);
       }, 3000);
@@ -430,8 +434,6 @@ export const ParticipantRegistration = () => {
                 value={registration.stallState}
                 onChange={(e) => {
                   const selectedState = e.target.value;
-                  const isOdishaSelected = selectedState === 'Odisha';
-                  setIsOdisha(isOdishaSelected);
                   setRegistration(prev => ({
                     ...prev,
                     stallState: selectedState,
@@ -440,134 +442,84 @@ export const ParticipantRegistration = () => {
                     gramPanchayat: '',
                     otherState: ''
                   }));
+                  setAllIndiaState(selectedState);
+                  setAllIndiaDistrict('');
+                  setAllIndiaBlock('');
                 }}
                 className="w-full px-3 py-2 border rounded-lg text-sm"
                 required
               >
                 <option value="">Select State</option>
-                <option value="Odisha">Odisha</option>
-                <option value="Other">Other State</option>
+                {processedIndiaData && getStates(processedIndiaData).map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
               </select>
             </div>
 
-            {registration.stallState === 'Other' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Select Other State/UT</label>
-                <select
-                  value={registration.otherState}
-                  onChange={(e) => setRegistration(prev => ({
-                    ...prev,
-                    otherState: e.target.value
-                  }))}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                  required
-                >
-                  <option value="">Select State/UT</option>
-                  <optgroup label="States">
-                    {indianStates.map(state => (
-                      <option key={state} value={state}>{state}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Union Territories">
-                    {unionTerritories.map(ut => (
-                      <option key={ut} value={ut}>{ut}</option>
-                    ))}
-                  </optgroup>
-                </select>
-              </div>
-            )}
-
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">District</label>
-              {isOdisha ? (
-                <select
-                  value={registration.stallDistrict}
-                  onChange={(e) => setRegistration(prev => ({
+              <select
+                value={registration.stallDistrict}
+                onChange={(e) => {
+                  setRegistration(prev => ({
                     ...prev,
-                    stallDistrict: e.target.value
-                  }))}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                  required
-                >
-                  <option value="">Select District</option>
-                  {availableDistricts.map(district => (
-                    <option key={district} value={district}>
-                      {district}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={registration.stallDistrict}
-                  onChange={(e) => setRegistration(prev => ({
-                    ...prev,
-                    stallDistrict: e.target.value
-                  }))}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                  placeholder="Enter district name"
-                  required
-                />
-              )}
+                    stallDistrict: e.target.value,
+                    stallBlock: '',
+                    gramPanchayat: ''
+                  }));
+                  setAllIndiaDistrict(e.target.value);
+                  setAllIndiaBlock('');
+                }}
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+                required
+                disabled={!registration.stallState}
+              >
+                <option value="">Select District</option>
+                {processedIndiaData && registration.stallState && getDistricts(processedIndiaData, registration.stallState).map(district => (
+                  <option key={district} value={district}>{district}</option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Block</label>
-              {isOdisha ? (
-                <select
-                  value={registration.stallBlock}
-                  onChange={(e) => setRegistration(prev => ({
+              <select
+                value={registration.stallBlock}
+                onChange={(e) => {
+                  setRegistration(prev => ({
                     ...prev,
-                    stallBlock: e.target.value
-                  }))}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                  required
-                  disabled={!registration.stallDistrict}
-                >
-                  <option value="">Select Block</option>
-                  {availableBlocks.map(block => (
-                    <option key={block} value={block}>
-                      {block}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={registration.stallBlock}
-                  onChange={(e) => setRegistration(prev => ({
-                    ...prev,
-                    stallBlock: e.target.value
-                  }))}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                  placeholder="Enter block name"
-                  required
-                />
-              )}
+                    stallBlock: e.target.value,
+                    gramPanchayat: ''
+                  }));
+                  setAllIndiaBlock(e.target.value);
+                }}
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+                required
+                disabled={!registration.stallDistrict}
+              >
+                <option value="">Select Block</option>
+                {processedIndiaData && registration.stallState && registration.stallDistrict && getBlocks(processedIndiaData, registration.stallState, registration.stallDistrict).map(block => (
+                  <option key={block} value={block}>{block}</option>
+                ))}
+              </select>
             </div>
 
-            {isOdisha && (
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Gram Panchayat</label>
-                <select
-                  value={registration.gramPanchayat}
-                  onChange={(e) => setRegistration(prev => ({
-                    ...prev,
-                    gramPanchayat: e.target.value
-                  }))}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                  required
-                  disabled={!registration.stallBlock}
-                >
-                  <option value="">Select Gram Panchayat</option>
-                  {availableGPs.map(gp => (
-                    <option key={gp} value={gp}>
-                      {gp}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* Gram Panchayat Input - always shown, manual entry for all states */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Gram Panchayat</label>
+              <input
+                type="text"
+                value={registration.gramPanchayat}
+                onChange={(e) => setRegistration(prev => ({
+                  ...prev,
+                  gramPanchayat: e.target.value
+                }))}
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+                placeholder="Enter Gram Panchayat name"
+                required
+                disabled={!registration.stallBlock}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

@@ -80,36 +80,14 @@ export const UtilityStalls = () => {
 
   const handleSaveStall = async () => {
     if (!editingStall) return;
-
     try {
-      let imageUrls = editingStall.images || [];
-
-      // Convert selected images to base64 if new images are selected
-      if (selectedImages.length > 0) {
-        const imagePromises = selectedImages.map(file => {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              resolve(e.target?.result as string);
-            };
-            reader.readAsDataURL(file);
-          });
-        });
-        imageUrls = await Promise.all(imagePromises);
-      }
-
       const updatedStall = {
         ...editingStall,
-        images: imageUrls,
+        images: selectedImages.map(file => URL.createObjectURL(file)),
         updatedAt: new Date()
       };
-
       await updateDoc(doc(db, 'stalls', editingStall.id), updatedStall);
-      
-      setUtilityStalls(prev => prev.map(stall => 
-        stall.id === editingStall.id ? updatedStall : stall
-      ));
-      
+      setUtilityStalls(prev => prev.map(stall => stall.id === editingStall.id ? updatedStall : stall));
       setEditingStall(null);
       setSelectedImages([]);
     } catch (err) {
@@ -163,6 +141,9 @@ export const UtilityStalls = () => {
       'Description': stall.description || '',
       'Created At': typeof stall.createdAt === 'string' ? stall.createdAt : stall.createdAt?.toISOString?.() || '',
       'Updated At': typeof stall.updatedAt === 'string' ? stall.updatedAt : stall.updatedAt?.toISOString?.() || '',
+      'Images': (stall.images && stall.images.length > 0)
+        ? stall.images.filter(url => typeof url === 'string' && url.startsWith('http')).join(', ')
+        : '',
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();

@@ -11,12 +11,20 @@ import { RegistrationViewer } from '../components/data/RegistrationViewer';
 import { PasswordGate } from '../components/admin/PasswordGate';
 import { useTheme } from '../contexts/ThemeContext';
 import { TrendingUp, Settings, UserPlus, Users } from 'lucide-react';
+import { getProducts, categories as PRODUCT_CATEGORIES } from '../services/productService';
+import { getExhibitionLayout } from '../services/exhibitionService';
+import { getFoods } from '../services/foodService';
+
 
 export const Data = () => {
   const { isAdmin, isDataUser, setIsDataUser, logout } = useTheme();
   const [localIsAuthenticated, setLocalIsAuthenticated] = useState(isAdmin || isDataUser);
   const [activeTab, setActiveTab] = useState('sales');
   const navigate = useNavigate();
+  const [categoryData, setCategoryData] = useState<{ category: string; count: number }[]>([]);
+  const [stallData, setStallData] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [foodData, setFoodData] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [stallCategoryData, setStallCategoryData] = useState<{ category: string; count: number }[]>([]);
 
   // Set data user state when locally authenticated (if not already admin)
   useEffect(() => {
@@ -24,6 +32,76 @@ export const Data = () => {
       setIsDataUser(true);
     }
   }, [localIsAuthenticated, setIsDataUser, isAdmin]);
+
+  useEffect(() => {
+    // Fetch products and count per category
+    getProducts().then(products => {
+      const counts: Record<string, number> = {};
+      PRODUCT_CATEGORIES.forEach(cat => { counts[cat] = 0; });
+      products.forEach(product => {
+        if (counts[product.category] !== undefined) {
+          counts[product.category] += 1;
+        }
+      });
+      setCategoryData(PRODUCT_CATEGORIES.map(cat => ({ category: cat, count: counts[cat] })));
+    });
+
+    // Fetch stall data for pie chart
+    getExhibitionLayout().then(layout => {
+      const stallChartData = [
+        { name: 'Participant Stalls', value: layout.stats.participant, color: '#3b82f6' },
+        { name: 'Utility Stalls', value: layout.stats.utility, color: '#8b5cf6' }
+      ];
+      setStallData(stallChartData);
+    });
+
+    // Fetch food data for vegetarian vs non-vegetarian pie chart
+    getFoods().then(foods => {
+      const vegetarianCount = foods.filter(food => food.isVegetarian).length;
+      const nonVegetarianCount = foods.filter(food => !food.isVegetarian).length;
+      const foodChartData = [
+        { name: 'Vegetarian', value: vegetarianCount, color: '#10b981' },
+        { name: 'Non-Vegetarian', value: nonVegetarianCount, color: '#ef4444' }
+      ];
+      setFoodData(foodChartData);
+    });
+
+    // Fetch category-wise stall data
+    getExhibitionLayout().then(layout => {
+      console.log('All stalls data:', layout.stalls);
+      
+      const categoryCounts: Record<string, number> = {};
+      let participantStallsCount = 0;
+      let stallsWithCategoryCount = 0;
+      
+      layout.stalls.forEach(stall => {
+        console.log('Stall:', stall.stallNumber, 'Type:', stall.type, 'Category:', stall.category);
+        
+        if (stall.type === 'participant') {
+          participantStallsCount++;
+          if (stall.category) {
+            stallsWithCategoryCount++;
+            categoryCounts[stall.category] = (categoryCounts[stall.category] || 0) + 1;
+          }
+        }
+      });
+
+      console.log('Participant stalls count:', participantStallsCount);
+      console.log('Stalls with category count:', stallsWithCategoryCount);
+      console.log('Category counts:', categoryCounts);
+
+      // Convert to chart data format and sort by count
+      const stallCategoryChartData = Object.entries(categoryCounts)
+        .map(([category, count]) => ({
+          category,
+          count
+        }))
+        .sort((a, b) => b.count - a.count); // Sort by count descending
+
+      console.log('Final chart data:', stallCategoryChartData);
+      setStallCategoryData(stallCategoryChartData);
+    });
+  }, []);
 
   const handleAuthenticate = () => {
     setLocalIsAuthenticated(true);
@@ -121,7 +199,6 @@ export const Data = () => {
           </div>
         </motion.div>
 
-        {/* Data Dashboard */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -129,10 +206,11 @@ export const Data = () => {
         >
           <Tabs
             tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
           />
         </motion.div>
+
+     
+   
       </div>
     </Layout>
   );
