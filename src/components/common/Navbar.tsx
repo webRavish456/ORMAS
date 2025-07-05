@@ -5,7 +5,7 @@ import { Menu, X, Sun, Moon, Home, Package, Calendar, Utensils, MessageSquare, U
 import { useTheme } from '../../contexts/ThemeContext';
 import { useExhibition } from '../../contexts/ExhibitionContext';
 import { db } from '../../firebase/config';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 
 interface Exhibition {
   id: string;
@@ -47,13 +47,14 @@ export const Navbar = () => {
 
   const fetchExhibitions = useCallback(async () => {
     try {
-      const q = query(collection(db, 'exhibitions'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(collection(db, 'exhibitions'));
       const exhibitionData = querySnapshot.docs
         .map(doc => ({
           id: doc.id,
           ...doc.data()
         } as Exhibition));
+      
+    
       
       setExhibitions(exhibitionData);
       

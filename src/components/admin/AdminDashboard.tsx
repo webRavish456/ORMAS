@@ -6,7 +6,6 @@ import { FoodManager } from './FoodManager';
 import { DiscountManager } from './DiscountManager';
 import { FeedbackViewer } from './FeedbackViewer';
 import { ExhibitionManager } from './ExhibitionManager';
-import { ExhibitionManagement } from './ExhibitionManagement';
 import { SettingsManager } from './SettingsManager';
 import { ParticipantsStall } from './ParticipantsStall';
 import { UtilityStalls } from './UtilityStalls';
@@ -36,7 +35,6 @@ export const AdminDashboard = () => {
 
   const tabs = [
     { id: 'settings', label: 'Settings', component: SettingsManager },
-    { id: 'exhibitions', label: 'Exhibitions', component: ExhibitionManagement },
     { id: 'products', label: 'Products', component: ProductManager },
     { id: 'schedule', label: 'Schedule', component: ScheduleManager },
     { id: 'foods', label: 'Foods', component: FoodManager },

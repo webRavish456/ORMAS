@@ -116,7 +116,7 @@ export const getExhibitionLayout = async () => {
     console.error('Error fetching exhibition layout:', error);
     return { rows: 0, columns: 0, stalls: [], stats: { total: 0, participant: 0, utility: 0 } };
   }
-};
+}; 
 
 export const getExhibitionStallsByExhibition = async (exhibition: string): Promise<Stall[]> => {
   try {
