@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase/config';
 import { collection, getDocs } from 'firebase/firestore';
 import { Layout } from '../components/common/Layout';
+import { useExhibition } from '../contexts/ExhibitionContext';
 import { 
   Users,
   MapPin,
@@ -87,6 +88,7 @@ const getUtilityIcon = (utilityType?: string) => {
 };
 
 const AllStallsPage = () => {
+  const { selectedExhibition } = useExhibition();
   const [allStalls, setAllStalls] = useState<Stall[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,12 +103,18 @@ const AllStallsPage = () => {
 
   useEffect(() => {
     fetchAllStalls();
-  }, []);
+  }, [selectedExhibition]);
 
   const fetchAllStalls = async () => {
+    if (!selectedExhibition) {
+      setAllStalls([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const stallsSnapshot = await getDocs(collection(db, 'stalls'));
+      const stallsSnapshot = await getDocs(collection(db, `exhibitions/${selectedExhibition}/stalls`));
       const stalls = stallsSnapshot.docs.map(doc => {
         const data = doc.data();
         const createdAtRaw = data.createdAt;
@@ -205,6 +213,20 @@ const AllStallsPage = () => {
     }
     return 0;
   };
+
+  if (!selectedExhibition) {
+    return (
+      <Layout
+        title="All Stalls"
+        subtitle="Please select an exhibition to view stalls"
+        showMarquee={true}
+      >
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-500">Please select an exhibition to view stalls</div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (loading) {
     return (
