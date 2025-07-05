@@ -56,3 +56,4 @@ ui-debug.log
 # TypeScript
 *.tsbuildinfo
 
+.vercel
