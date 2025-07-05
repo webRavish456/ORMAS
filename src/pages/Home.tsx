@@ -164,13 +164,15 @@ export const Home = () => {
                       transition={{ delay: 0.4, duration: 0.8 }}
                       className="relative"
                     >
-                      <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-2xl overflow-hidden shadow-2xl">
-                        <img
-                          src="/Mohan-Majhi-.jpeg"
-                          alt="Mohan Majhi"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                      <div className="relative">
+                        <div className="w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full overflow-hidden shadow-2xl ring-4 ring-white/30 bg-white/10 p-1">
+                          <img
+                            src="/Mohan-Majhi-.jpeg"
+                            alt="Mohan Majhi"
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-full"></div>
+                        </div>
                       </div>
                       {/* Decorative elements */}
                       <div className="absolute -top-4 -right-4 w-8 h-8 bg-yellow-300 rounded-full opacity-80"></div>
