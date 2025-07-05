@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase/config';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
-import { Plus, Activity, Package, DollarSign } from 'lucide-react';
+import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { Plus, Activity, Package, DollarSign, AlertCircle } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
 import { useExhibition } from '../../contexts/ExhibitionContext';
@@ -9,15 +9,17 @@ import { useExhibition } from '../../contexts/ExhibitionContext';
 interface Exhibition {
   id?: string;
   name: string;
+  description?: string;
   status: 'live' | 'completed';
-  totalStalls: number;
-  totalSales: number;
+  totalStalls?: number;
+  totalSales?: number;
+  createdAt?: Date;
 }
 
 const downloadRegistrations = async (exhibitionId: string, exhibitionName: string) => {
   const q = query(
-    collection(db, 'registrations'),
-    where('exhibitionId', '==', exhibitionId)
+    collection(db, `exhibitions/${exhibitionId}/registrations`),
+    orderBy('createdAt', 'desc')
   );
   const snapshot = await getDocs(q);
   
@@ -27,7 +29,7 @@ const downloadRegistrations = async (exhibitionId: string, exhibitionName: strin
     // Create a base record with common fields
     const baseRecord = {
       registrationId: doc.id,
-      exhibitionId: data.exhibitionId,
+      exhibitionId: exhibitionId,
       stallNumber: data.stallNumber,
       stallState: data.stallState,
       otherState: data.otherState || '',
@@ -66,8 +68,8 @@ const downloadRegistrations = async (exhibitionId: string, exhibitionName: strin
 
 const downloadSales = async (exhibitionId: string, exhibitionName: string) => {
   const q = query(
-    collection(db, 'dailySales'),
-    where('exhibitionId', '==', exhibitionId)
+    collection(db, `exhibitions/${exhibitionId}/dailySales`),
+    orderBy('date', 'desc')
   );
   const snapshot = await getDocs(q);
   
@@ -77,7 +79,7 @@ const downloadSales = async (exhibitionId: string, exhibitionName: string) => {
     // Create a base record with common fields
     const baseRecord = {
       saleId: doc.id,
-      exhibitionId: data.exhibitionId,
+      exhibitionId: exhibitionId,
       stallId: data.stallId,
       date: data.date,
     };
@@ -100,8 +102,11 @@ const downloadSales = async (exhibitionId: string, exhibitionName: string) => {
 export const ExhibitionConfig = () => {
   const { selectedExhibition } = useExhibition();
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newExhibition, setNewExhibition] = useState<Exhibition>({
     name: '',
+    description: '',
     status: 'live',
     totalStalls: 0,
     totalSales: 0
@@ -109,140 +114,235 @@ export const ExhibitionConfig = () => {
 
   const fetchExhibitions = async () => {
     try {
-      // Get exhibition data from the selected exhibition path
-      const exhibitionDoc = await getDocs(collection(db, 'exhibitions'));
-      const exhibitionData = exhibitionDoc.docs
-        .filter(doc => doc.id === selectedExhibition)
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Exhibition[];
+      setLoading(true);
+      const q = query(collection(db, 'exhibitions'), orderBy('createdAt', 'desc'));
+      const exhibitionDoc = await getDocs(q);
+      const exhibitionData = exhibitionDoc.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date()
+      })) as Exhibition[];
       setExhibitions(exhibitionData);
     } catch (error) {
       console.error('Error fetching exhibitions:', error);
+      setError('Failed to fetch exhibitions');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (selectedExhibition) {
-      fetchExhibitions();
-    }
-  }, [selectedExhibition]);
+    fetchExhibitions();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!newExhibition.name.trim()) {
+      setError('Exhibition name is required');
+      return;
+    }
+
+    // Check if name already exists (case insensitive)
+    const existingExhibition = exhibitions.find(
+      ex => ex.name.toLowerCase() === newExhibition.name.toLowerCase()
+    );
+    
+    if (existingExhibition) {
+      setError('An exhibition with this name already exists');
+      return;
+    }
+
     try {
-      await addDoc(collection(db, 'exhibitions'), newExhibition);
+      setError(null);
+      await addDoc(collection(db, 'exhibitions'), {
+        name: newExhibition.name.trim(),
+        description: newExhibition.description?.trim() || '',
+        status: newExhibition.status,
+        totalStalls: newExhibition.totalStalls,
+        totalSales: newExhibition.totalSales,
+        createdAt: new Date()
+      });
+      
       setNewExhibition({
         name: '',
+        description: '',
         status: 'live',
         totalStalls: 0,
         totalSales: 0
       });
+      
       fetchExhibitions();
     } catch (error) {
       console.error('Error adding exhibition:', error);
+      setError('Failed to add exhibition');
     }
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading exhibitions...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg p-4 shadow-sm space-y-4">
-        <div className="flex items-center gap-2 text-navy-700 mb-2">
-          <Plus className="w-5 h-5" />
-          <h3 className="font-semibold">Add New Exhibition</h3>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Exhibition Name</label>
-          <input
-            type="text"
-            required
-            value={newExhibition.name}
-            onChange={(e) => setNewExhibition({ ...newExhibition, name: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-navy-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-            <select
-              value={newExhibition.status}
-              onChange={(e) => setNewExhibition({ ...newExhibition, status: e.target.value as 'live' | 'completed' })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-navy-500"
-            >
-              <option value="live">Live</option>
-              <option value="completed">Completed</option>
-            </select>
+    <div className="space-y-6">
+      {/* Add New Exhibition Form */}
+      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-dark-700">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex items-center gap-2 text-navy-700 dark:text-navy-300 mb-4">
+            <Plus className="w-5 h-5" />
+            <h3 className="font-semibold text-lg">Add New Exhibition</h3>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <span className="text-red-700 dark:text-red-400">{error}</span>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Total Stalls</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Exhibition Name *
+            </label>
             <input
-              type="number"
+              type="text"
               required
-              value={newExhibition.totalStalls}
-              onChange={(e) => setNewExhibition({ ...newExhibition, totalStalls: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-navy-500"
+              value={newExhibition.name}
+              onChange={(e) => setNewExhibition({ ...newExhibition, name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
+              placeholder="e.g., ORMAS, General Exhibition"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Total Sales (₹)</label>
-          <input
-            type="number"
-            required
-            value={newExhibition.totalSales}
-            onChange={(e) => setNewExhibition({ ...newExhibition, totalSales: parseInt(e.target.value) })}
-            className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-navy-500"
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Description
+            </label>
+            <textarea
+              value={newExhibition.description}
+              onChange={(e) => setNewExhibition({ ...newExhibition, description: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
+              placeholder="Brief description of the exhibition"
+              rows={3}
+            />
+          </div>
 
-        <button
-          type="submit"
-          className="w-full bg-navy-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-navy-700"
-        >
-          Add Exhibition
-        </button>
-      </form>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+              <select
+                value={newExhibition.status}
+                onChange={(e) => setNewExhibition({ ...newExhibition, status: e.target.value as 'live' | 'completed' })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
+              >
+                <option value="live">Live</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
 
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-navy-800">Current Exhibitions</h3>
-        {exhibitions.map((exhibition) => (
-          <div key={exhibition.id} className="bg-white rounded-lg p-4 shadow-sm space-y-2">
-            <h4 className="font-semibold text-navy-700">{exhibition.name}</h4>
-            <div className="grid grid-cols-3 gap-2 text-sm">
-              <div className="flex items-center gap-1 text-gray-600">
-                <Activity className="w-4 h-4" />
-                {exhibition.status}
-              </div>
-              <div className="flex items-center gap-1 text-gray-600">
-                <Package className="w-4 h-4" />
-                {exhibition.totalStalls}
-              </div>
-              <div className="flex items-center gap-1 text-gray-600">
-                <DollarSign className="w-4 h-4" />
-                ₹{exhibition.totalSales}
-              </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => exhibition.id && exhibition.name && downloadRegistrations(exhibition.id, exhibition.name)}
-                  className="text-sm text-navy-600 hover:text-navy-700"
-                >
-                  Download Registrations
-                </button>
-                <button
-                  onClick={() => exhibition.id && exhibition.name && downloadSales(exhibition.id, exhibition.name)}
-                  className="text-sm text-navy-600 hover:text-navy-700"
-                >
-                  Download Sales
-                </button>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Stalls</label>
+              <input
+                type="number"
+                min="0"
+                value={newExhibition.totalStalls || ''}
+                onChange={(e) => setNewExhibition({ ...newExhibition, totalStalls: e.target.value === '' ? undefined : parseInt(e.target.value) || 0 })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Sales (₹)</label>
+              <input
+                type="number"
+                min="0"
+                value={newExhibition.totalSales || ''}
+                onChange={(e) => setNewExhibition({ ...newExhibition, totalSales: e.target.value === '' ? undefined : parseInt(e.target.value) || 0 })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg text-sm focus:ring-2 focus:ring-navy-500 focus:border-transparent bg-white dark:bg-dark-700 text-gray-900 dark:text-white"
+              />
             </div>
           </div>
-        ))}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="px-6 py-2 bg-navy-600 hover:bg-navy-700 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Exhibition
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Existing Exhibitions */}
+      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-dark-700">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+          <Activity className="w-5 h-5" />
+          Existing Exhibitions
+        </h3>
+
+        {exhibitions.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No exhibitions found. Add your first exhibition above.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {exhibitions.map((exhibition) => (
+              <div
+                key={exhibition.id}
+                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700 rounded-lg border border-gray-200 dark:border-dark-600"
+              >
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-800 dark:text-white">{exhibition.name}</h4>
+                  {exhibition.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{exhibition.description}</p>
+                  )}
+                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      exhibition.status === 'live' 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                    }`}>
+                      {exhibition.status}
+                    </span>
+                                         <span className="flex items-center gap-1">
+                       <Package className="w-4 h-4" />
+                       {exhibition.totalStalls || 0} stalls
+                     </span>
+                                         <span className="flex items-center gap-1">
+                       <DollarSign className="w-4 h-4" />
+                       ₹{(exhibition.totalSales || 0).toLocaleString()}
+                     </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => downloadRegistrations(exhibition.id!, exhibition.name)}
+                    className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-sm transition-colors"
+                  >
+                    Download Registrations
+                  </button>
+                  <button
+                    onClick={() => downloadSales(exhibition.id!, exhibition.name)}
+                    className="px-3 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded text-sm transition-colors"
+                  >
+                    Download Sales
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

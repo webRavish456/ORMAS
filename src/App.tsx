@@ -17,19 +17,19 @@ function App() {
   return (
     <ThemeProvider>
       <ExhibitionProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/foods" element={<Foods />} />
-            <Route path="/feedback" element={<Feedback />} />
-            <Route path="/map" element={<ExhibitionMapPage />} />
-            <Route path="/stalls" element={<AllStallsPage />} />
-            <Route path="/administrator" element={<Administrator />} />
-            <Route path="/data" element={<Data />} />
-          </Routes>
-        </BrowserRouter>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/foods" element={<Foods />} />
+          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/map" element={<ExhibitionMapPage />} />
+          <Route path="/stalls" element={<AllStallsPage />} />
+          <Route path="/administrator" element={<Administrator />} />
+          <Route path="/data" element={<Data />} />
+        </Routes>
+      </BrowserRouter>
       </ExhibitionProvider>
     </ThemeProvider>
   );

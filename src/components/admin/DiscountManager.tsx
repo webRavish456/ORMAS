@@ -78,7 +78,7 @@ export const DiscountManager = () => {
       setDiscounts([...discounts, {
         id: docRef.id,
         category: newDiscount.category,
-        percentage,
+          percentage,
         code,
         stallRange: newDiscount.stallRange
       }]);
@@ -110,7 +110,7 @@ export const DiscountManager = () => {
         code,
         stallRange: editForm.stallRange
       });
-      setDiscounts(discounts.map(discount =>
+      setDiscounts(discounts.map(discount => 
         discount.id === id ? {
           ...discount,
           category: editForm.category,
