@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getExhibitionPhotos, type ExhibitionPhoto } from '../services/exhibitionService';
+import { getExhibitionPhotosByExhibition, type ExhibitionPhoto } from '../services/exhibitionService';
+import { useExhibition } from '../contexts/ExhibitionContext';
 
 export const ExhibitionSlideshow = () => {
   const [photos, setPhotos] = useState<ExhibitionPhoto[]>([]);
@@ -9,11 +10,18 @@ export const ExhibitionSlideshow = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const { selectedExhibition } = useExhibition();
 
   useEffect(() => {
     const fetchPhotos = async () => {
+      if (!selectedExhibition) {
+        setPhotos([]);
+        setLoading(false);
+        return;
+      }
+
       try {
-        const fetchedPhotos = await getExhibitionPhotos();
+        const fetchedPhotos = await getExhibitionPhotosByExhibition(selectedExhibition);
         setPhotos(fetchedPhotos);
       } catch (err) {
         console.error('Error fetching exhibition photos:', err);
@@ -24,7 +32,7 @@ export const ExhibitionSlideshow = () => {
     };
 
     fetchPhotos();
-  }, []);
+  }, [selectedExhibition]);
 
   useEffect(() => {
     if (photos.length > 1) {

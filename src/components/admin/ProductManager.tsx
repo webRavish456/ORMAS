@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Plus, X, Edit2, Check } from 'lucide-react';
-import { getProducts, saveProduct, deleteProduct, updateProduct, categories } from '../../services/productService';
+import { getProductsByExhibition, saveProductToExhibition, updateProductInExhibition, deleteProductFromExhibition, categories } from '../../services/productService';
 import type { Product } from '../../services/productService';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
 
 export const ProductManager = () => {
+  const { selectedExhibition } = useExhibition();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,12 +26,12 @@ export const ProductManager = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [selectedExhibition]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const fetchedProducts = await getProducts();
+      const fetchedProducts = await getProductsByExhibition(selectedExhibition);
       setProducts(fetchedProducts);
     } catch (err) {
       setError('Failed to load products');
@@ -47,7 +50,7 @@ export const ProductManager = () => {
   const handleAdd = async () => {
     if (newProduct.category && newProduct.name && newProduct.images[0] && validateStallRange(newProduct.stallRange)) {
       try {
-        const savedProduct = await saveProduct(newProduct);
+        const savedProduct = await saveProductToExhibition(selectedExhibition, newProduct);
         setProducts([...products, savedProduct]);
         setNewProduct({ category: '', name: '', images: [''], stallRange: '' });
       } catch (err) {
@@ -70,7 +73,7 @@ export const ProductManager = () => {
   const handleSaveEdit = async (id: string) => {
     if (editForm.category && editForm.name && editForm.images[0] && validateStallRange(editForm.stallRange)) {
       try {
-        const updatedProduct = await updateProduct(id, editForm);
+        const updatedProduct = await updateProductInExhibition(selectedExhibition, id, editForm);
         setProducts(products.map(product => 
           product.id === id ? updatedProduct : product
         ));
@@ -84,7 +87,7 @@ export const ProductManager = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteProduct(id);
+      await deleteProductFromExhibition(selectedExhibition, id);
       setProducts(products.filter(product => product.id !== id));
     } catch (err) {
       setError('Failed to delete product');
@@ -132,6 +135,7 @@ export const ProductManager = () => {
 
   return (
     <div>
+      <ExhibitionSelector />
       <h2 className="text-xl font-semibold mb-4">Manage Products</h2>
       
       <div className="grid gap-4 mb-6">

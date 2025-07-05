@@ -51,3 +51,35 @@ export const deleteProduct = async (id: string) => {
   const docRef = doc(db, 'products', id);
   await deleteDoc(docRef);
 };
+
+export const getProductsByExhibition = async (exhibition: string): Promise<Product[]> => {
+  const exhibitionProductsCollection = collection(db, `exhibitions/${exhibition}/products`);
+  const snapshot = await getDocs(exhibitionProductsCollection);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Product));
+};
+
+export const saveProductToExhibition = async (exhibition: string, product: Omit<Product, 'id'>) => {
+  const exhibitionProductsCollection = collection(db, `exhibitions/${exhibition}/products`);
+  const docRef = await addDoc(exhibitionProductsCollection, product);
+  return {
+    id: docRef.id,
+    ...product
+  };
+};
+
+export const updateProductInExhibition = async (exhibition: string, id: string, updates: Omit<Product, 'id'>) => {
+  const docRef = doc(db, `exhibitions/${exhibition}/products`, id);
+  await updateDoc(docRef, updates);
+  return {
+    id,
+    ...updates
+  };
+};
+
+export const deleteProductFromExhibition = async (exhibition: string, id: string) => {
+  const docRef = doc(db, `exhibitions/${exhibition}/products`, id);
+  await deleteDoc(docRef);
+};

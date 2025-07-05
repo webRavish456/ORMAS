@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Plus, X, Edit2, Check } from 'lucide-react';
 import { getFoods, saveFood, updateFood, deleteFood, type Food } from '../../services/foodService';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
+import { getFoodsByExhibition, saveFoodToExhibition, updateFoodInExhibition, deleteFoodFromExhibition } from '../../services/foodService';
 
 export const FoodManager = () => {
+  const { selectedExhibition } = useExhibition();
   const [foods, setFoods] = useState<Food[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,12 +30,12 @@ export const FoodManager = () => {
 
   useEffect(() => {
     fetchFoods();
-  }, []);
+  }, [selectedExhibition]);
 
   const fetchFoods = async () => {
     try {
       setLoading(true);
-      const fetchedFoods = await getFoods();
+      const fetchedFoods = await getFoodsByExhibition(selectedExhibition);
       setFoods(fetchedFoods);
     } catch (err) {
       setError('Failed to load foods');
@@ -44,7 +48,7 @@ export const FoodManager = () => {
   const handleAdd = async () => {
     if (newFood.name && newFood.description && newFood.location && newFood.price) {
       try {
-        const savedFood = await saveFood(newFood);
+        const savedFood = await saveFoodToExhibition(selectedExhibition, newFood);
         setFoods([...foods, savedFood]);
         setNewFood({ name: '', description: '', location: '', price: '', images: [''], isVegetarian: true });
       } catch (err) {
@@ -69,7 +73,7 @@ export const FoodManager = () => {
   const handleSaveEdit = async (id: string) => {
     if (editForm.name && editForm.description && editForm.location && editForm.price) {
       try {
-        const updatedFood = await updateFood(id, editForm);
+        const updatedFood = await updateFoodInExhibition(selectedExhibition, id, editForm);
         setFoods(foods.map(food => 
           food.id === id ? updatedFood : food
         ));
@@ -83,7 +87,7 @@ export const FoodManager = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteFood(id);
+      await deleteFoodFromExhibition(selectedExhibition, id);
       setFoods(foods.filter(food => food.id !== id));
     } catch (err) {
       setError('Failed to delete food item');
@@ -131,6 +135,7 @@ export const FoodManager = () => {
 
   return (
     <div>
+      <ExhibitionSelector />
       <h2 className="text-xl font-semibold mb-4">Manage Foods</h2>
       
       

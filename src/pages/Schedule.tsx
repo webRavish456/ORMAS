@@ -3,25 +3,28 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, Image as ImageIcon } from 'lucide-react';
 import { Layout } from '../components/common/Layout';
 import { getEvents, type Event } from '../services/scheduleService';
+import { useExhibition } from '../contexts/ExhibitionContext';
+import { getEventsByExhibition } from '../services/scheduleService';
 
 export const Schedule = () => {
+  const { selectedExhibition } = useExhibition();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const fetchedEvents = await getEvents();
-        setEvents(fetchedEvents);
-      } catch (error) {
-        console.error('Error fetching events:', error);
-      } finally {
+    setLoading(true);
+    setError(null);
+    getEventsByExhibition(selectedExhibition)
+      .then((data) => {
+        setEvents(data);
         setLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, []);
+      })
+      .catch((err) => {
+        setError('Failed to load schedule');
+        setLoading(false);
+      });
+  }, [selectedExhibition]);
 
   // Group events by date and sort by time
   const groupedEvents = events.reduce((groups: { [key: string]: Event[] }, event) => {

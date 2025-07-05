@@ -1,10 +1,11 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../../firebase/config';
 import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
 import { Edit2, Save, X, ChevronDown, ChevronUp, Camera } from 'lucide-react';
 import { indianStates, unionTerritories } from '../../constants/locationConstants';
 import Webcam from 'react-webcam';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
 
 interface Registration {
   id: string;
@@ -40,8 +41,7 @@ interface Registration {
 }
 
 export const RegistrationViewer = () => {
-  const [exhibitions, setExhibitions] = useState<Array<{ id: string; name: string }>>([]);
-  const [selectedExhibition, setSelectedExhibition] = useState('');
+  const { selectedExhibition } = useExhibition();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [expandedStalls, setExpandedStalls] = useState<{[key: string]: boolean}>({});
   const [editingParticipant, setEditingParticipant] = useState<{
@@ -58,36 +58,15 @@ export const RegistrationViewer = () => {
   const webcamRef = useRef<Webcam>(null);
 
   useEffect(() => {
-    fetchExhibitions();
-  }, []);
-
-  useEffect(() => {
     if (selectedExhibition) {
       fetchRegistrations();
     }
   }, [selectedExhibition]);
 
-  const fetchExhibitions = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, 'exhibitions'));
-      setExhibitions(snapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name
-      })));
-    } catch (error) {
-      console.error('Error fetching exhibitions:', error);
-      setError('Failed to fetch exhibitions');
-    }
-  };
-
   const fetchRegistrations = async () => {
     setLoading(true);
     try {
-      const q = query(
-        collection(db, 'registrations'),
-        where('exhibitionId', '==', selectedExhibition)
-      );
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(collection(db, `exhibitions/${selectedExhibition}/registrations`));
       const registrationData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -110,7 +89,7 @@ export const RegistrationViewer = () => {
       const updatedParticipants = [...registration.participants];
       updatedParticipants[participantIndex] = updatedParticipant;
 
-      await updateDoc(doc(db, 'registrations', registration.id), {
+      await updateDoc(doc(db, `exhibitions/${selectedExhibition}/registrations`, registration.id), {
         participants: updatedParticipants
       });
 
@@ -131,7 +110,7 @@ export const RegistrationViewer = () => {
     try {
       if (!editForms[registrationId] || !registrationId) return;
 
-      const registrationRef = doc(db, 'registrations', registrationId);
+      const registrationRef = doc(db, `exhibitions/${selectedExhibition}/registrations`, registrationId);
       const updateData = { ...editForms[registrationId] };
       delete updateData.id;
       delete updateData.stallNumber;
@@ -189,22 +168,7 @@ export const RegistrationViewer = () => {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-navy-800">View Registrations</h2>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Exhibition</label>
-        <select
-          value={selectedExhibition}
-          onChange={(e) => setSelectedExhibition(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg text-sm"
-        >
-          <option value="">Select Exhibition</option>
-          {exhibitions.map(exhibition => (
-            <option key={exhibition.id} value={exhibition.id}>
-              {exhibition.name}
-            </option>
-          ))}
-        </select>
-      </div>
+    
 
       {loading && <div className="text-center py-4">Loading registrations...</div>}
       {error && <div className="text-red-600 py-4">{error}</div>}

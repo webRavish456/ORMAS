@@ -1,8 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sun, Moon, Home, Package, Calendar, Utensils, MessageSquare, Users, BarChart3, Map } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import { db } from '../../firebase/config';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+
+interface Exhibition {
+  id: string;
+  name: string;
+}
 
 const allNavItems = [
   { path: '/', label: 'Home', icon: Home },
@@ -19,6 +27,9 @@ export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { isDark, toggleTheme, isAdmin, isDataUser, userRole } = useTheme();
+  const { selectedExhibition, setSelectedExhibition } = useExhibition();
+  const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Filter navigation items based on user role
   const navItems = allNavItems.filter(item => {
@@ -31,7 +42,36 @@ export const Navbar = () => {
     return true;
   });
 
+  // Only show exhibition selector if not on /administrator or /data
+  const showExhibitionSelector = location.pathname !== '/administrator' && location.pathname !== '/data';
 
+  const fetchExhibitions = useCallback(async () => {
+    try {
+      const q = query(collection(db, 'exhibitions'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const exhibitionData = querySnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Exhibition));
+      
+      setExhibitions(exhibitionData);
+      
+      // If no exhibition is selected and we have exhibitions, select the first one
+      if (!selectedExhibition && exhibitionData.length > 0) {
+        setSelectedExhibition(exhibitionData[0].name.toLowerCase().replace(/\s+/g, '-'));
+      }
+    } catch (error) {
+      console.error('Error fetching exhibitions:', error);
+      setExhibitions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedExhibition, setSelectedExhibition]);
+
+  useEffect(() => {
+    fetchExhibitions();
+  }, [fetchExhibitions]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-dark-900/80 backdrop-blur-md border-b border-gray-200 dark:border-dark-700">
@@ -76,11 +116,36 @@ export const Navbar = () => {
                 </Link>
               );
             })}
-
           </div>
 
-          {/* Theme Toggle & Mobile Menu */}
+          {/* Exhibition Selector & Theme Toggle */}
           <div className="flex items-center space-x-2">
+            {/* Exhibition Selector */}
+            {showExhibitionSelector && (
+                              <div className="hidden md:flex items-center space-x-2">
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Exhibition:</label>
+                  {loading ? (
+                    <select className="px-3 py-1 text-sm border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" disabled>
+                      <option>Loading...</option>
+                    </select>
+                  ) : exhibitions.length === 0 ? (
+                    <select className="px-3 py-1 text-sm border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" disabled>
+                      <option>No exhibitions</option>
+                    </select>
+                  ) : (
+                    <select
+                      value={selectedExhibition}
+                      onChange={(e) => setSelectedExhibition(e.target.value)}
+                      className="px-3 py-1 text-sm border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      {exhibitions.map(exh => (
+                        <option key={exh.id} value={exh.name.toLowerCase().replace(/\s+/g, '-')}>{exh.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+            )}
+
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg bg-gray-100 dark:bg-dark-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors"
@@ -108,6 +173,32 @@ export const Navbar = () => {
             className="md:hidden bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-dark-700"
           >
             <div className="px-4 py-2 space-y-1">
+              {/* Mobile Exhibition Selector */}
+              {showExhibitionSelector && (
+                                  <div className="flex items-center space-x-2 px-3 py-2">
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Exhibition:</label>
+                    {loading ? (
+                      <select className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" disabled>
+                        <option>Loading...</option>
+                      </select>
+                    ) : exhibitions.length === 0 ? (
+                      <select className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" disabled>
+                        <option>No exhibitions</option>
+                      </select>
+                    ) : (
+                      <select
+                        value={selectedExhibition}
+                        onChange={(e) => setSelectedExhibition(e.target.value)}
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        {exhibitions.map(exh => (
+                          <option key={exh.id} value={exh.name.toLowerCase().replace(/\s+/g, '-')}>{exh.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+              )}
+
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -128,8 +219,6 @@ export const Navbar = () => {
                   </Link>
                 );
               })}
-              
-
             </div>
           </motion.div>
         )}

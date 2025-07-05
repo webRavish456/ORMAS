@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, PieChart, Pie, Cell } from 'recharts';
 import { getSalesData } from '../../services/salesService';
-import { getProducts, categories as PRODUCT_CATEGORIES } from '../../services/productService';
-import { getExhibitionLayout } from '../../services/exhibitionService';
-import { getFoods } from '../../services/foodService';
+import { getProducts, categories as PRODUCT_CATEGORIES, getProductsByExhibition } from '../../services/productService';
+import { getExhibitionLayout, getExhibitionLayoutByExhibition } from '../../services/exhibitionService';
+import { getFoods, getFoodsByExhibition } from '../../services/foodService';
+import { useExhibition } from '../../contexts/ExhibitionContext';
 
 interface SalesData {
   date: string;
@@ -11,6 +12,7 @@ interface SalesData {
 }
 
 export const DailySales = () => {
+  const { selectedExhibition } = useExhibition();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [categoryData, setCategoryData] = useState<{ category: string; count: number }[]>([]);
   const [stallData, setStallData] = useState<{ name: string; value: number; color: string }[]>([]);
@@ -21,7 +23,7 @@ export const DailySales = () => {
     fetchSalesData();
 
     // Fetch products and count per category
-    getProducts().then(products => {
+    getProductsByExhibition(selectedExhibition).then(products => {
       const counts: Record<string, number> = {};
       PRODUCT_CATEGORIES.forEach(cat => { counts[cat] = 0; });
       products.forEach(product => {
@@ -33,7 +35,7 @@ export const DailySales = () => {
     });
 
     // Fetch stall data for pie chart
-    getExhibitionLayout().then(layout => {
+    getExhibitionLayoutByExhibition(selectedExhibition).then(layout => {
       const stallChartData = [
         { name: 'Participant Stalls', value: layout.stats.participant, color: '#3b82f6' },
         { name: 'Utility Stalls', value: layout.stats.utility, color: '#8b5cf6' }
@@ -42,7 +44,7 @@ export const DailySales = () => {
     });
 
     // Fetch food data for vegetarian vs non-vegetarian pie chart
-    getFoods().then(foods => {
+    getFoodsByExhibition(selectedExhibition).then(foods => {
       const vegetarianCount = foods.filter(food => food.isVegetarian).length;
       const nonVegetarianCount = foods.filter(food => !food.isVegetarian).length;
       const foodChartData = [
@@ -53,7 +55,7 @@ export const DailySales = () => {
     });
 
     // Fetch category-wise stall data
-    getExhibitionLayout().then(layout => {
+    getExhibitionLayoutByExhibition(selectedExhibition).then(layout => {
       const categoryCounts: Record<string, number> = {};
       layout.stalls.forEach(stall => {
         if (stall.type === 'participant' && stall.category) {
@@ -65,7 +67,7 @@ export const DailySales = () => {
         .sort((a, b) => b.count - a.count);
       setStallCategoryData(stallCategoryChartData);
     });
-  }, []);
+  }, [selectedExhibition]);
 
   const fetchSalesData = async () => {
     try {
@@ -77,36 +79,55 @@ export const DailySales = () => {
   };
 
   return (
-
     <>
     <div className="bg-white rounded-lg shadow-md p-4">
       <h3 className="text-lg font-semibold mb-4">Daily Sales</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={salesData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="totalSales" fill="#3182CE" />
-        </BarChart>
-      </ResponsiveContainer>
+      {salesData.length > 0 ? (
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={salesData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="totalSales" fill="#3182CE" />
+          </BarChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="flex items-center justify-center h-64 text-gray-500">
+          <div className="text-center">
+            <div className="text-4xl mb-2">📊</div>
+            <p className="text-lg font-medium">No sales data available</p>
+            <p className="text-sm">Sales data will appear here once available</p>
+          </div>
+        </div>
+      )}
     </div>
 
       <div className="bg-white rounded-lg shadow-md p-4 mt-8">
       <div className="mb-2 mt-8">
         <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Category-wise Product Count</h3>
-        <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={categoryData} margin={{ top: 16, right: 32, left: 0, bottom: 32 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="category" angle={-20} textAnchor="end" interval={0} height={60} tick={{ fontSize: 13, fill: '#555' }} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 13, fill: '#555' }} />
-            <Tooltip />
-            <Bar dataKey="count" fill="#6366f1">
-              <LabelList dataKey="count" position="top" />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {categoryData.some(item => item.count > 0) ? (
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={categoryData} margin={{ top: 16, right: 32, left: 0, bottom: 32 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="category" angle={-20} textAnchor="end" interval={0} height={60} tick={{ fontSize: 13, fill: '#555' }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 13, fill: '#555' }} />
+              <Tooltip />
+              <Bar dataKey="count" fill="#6366f1">
+                <LabelList dataKey="count" position="top" />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-64 text-gray-500">
+            <div className="text-center">
+              <div className="text-4xl mb-2">📦</div>
+              <p className="text-lg font-medium">No products available</p>
+              <p className="text-sm">Product data will appear here once available</p>
+            </div>
+          </div>
+        )}
       </div>
        </div>
   
@@ -114,38 +135,50 @@ export const DailySales = () => {
         <div className="bg-white rounded-lg shadow-md p-4 mt-8">
         <div>
           <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Stall Distribution</h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
-              <Pie
-                data={stallData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {stallData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+          {stallData.some(item => item.value > 0) ? (
+            <>
+              <ResponsiveContainer width="100%" height={320}>
+                <PieChart>
+                  <Pie
+                    data={stallData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {stallData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [value, name]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-4 flex justify-center gap-6">
+                {stallData.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    ></div>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {item.name}: {item.value}
+                    </span>
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip formatter={(value, name) => [value, name]} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-4 flex justify-center gap-6">
-            {stallData.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div 
-                  className="w-4 h-4 rounded-full" 
-                  style={{ backgroundColor: item.color }}
-                ></div>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {item.name}: {item.value}
-                </span>
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="text-center">
+                <div className="text-4xl mb-2">🏪</div>
+                <p className="text-lg font-medium">No stalls available</p>
+                <p className="text-sm">Stall data will appear here once available</p>
+              </div>
+            </div>
+          )}
         </div>
         </div>
 
@@ -153,38 +186,50 @@ export const DailySales = () => {
         <div className="bg-white rounded-lg shadow-md p-4 mt-8">
         <div>
           <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Food Distribution</h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
-              <Pie
-                data={foodData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {foodData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+          {foodData.some(item => item.value > 0) ? (
+            <>
+              <ResponsiveContainer width="100%" height={320}>
+                <PieChart>
+                  <Pie
+                    data={foodData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {foodData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [value, name]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-4 flex justify-center gap-6">
+                {foodData.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    ></div>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {item.name}: {item.value}
+                    </span>
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip formatter={(value, name) => [value, name]} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-4 flex justify-center gap-6">
-            {foodData.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div 
-                  className="w-4 h-4 rounded-full" 
-                  style={{ backgroundColor: item.color }}
-                ></div>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {item.name}: {item.value}
-                </span>
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="text-center">
+                <div className="text-4xl mb-2">🍽️</div>
+                <p className="text-lg font-medium">No food items available</p>
+                <p className="text-sm">Food data will appear here once available</p>
+              </div>
+            </div>
+          )}
         </div>
         </div>
     
@@ -199,7 +244,7 @@ export const DailySales = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="category" 
-                angle={-45} 
+                angle={-20} 
                 textAnchor="end" 
                 interval={0} 
                 height={80} 
@@ -207,71 +252,22 @@ export const DailySales = () => {
               />
               <YAxis allowDecimals={false} tick={{ fontSize: 13, fill: '#555' }} />
               <Tooltip />
-              <Bar dataKey="count" fill="#10b981">
-                {stallCategoryData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={entry.count === 3 ? '#f97316' : '#10b981'} 
-                  />
-                ))}
+              <Bar dataKey="count" fill="#8b5cf6">
                 <LabelList dataKey="count" position="top" />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-96 flex items-center justify-center">
+          <div className="flex items-center justify-center h-64 text-gray-500">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                <span className="text-2xl">📊</span>
-              </div>
-              <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                No Category Data Available
-              </h4>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                No participant stalls with categories found. Please check:
-              </p>
-              <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                <li>• Stalls are assigned as 'participant' type</li>
-                <li>• Participant stalls have categories assigned</li>
-                <li>• Check browser console for detailed data</li>
-              </ul>
-            </div>
-          </div>
-        )}
-        <div className="mt-4 flex flex-wrap justify-center gap-4">
-          {stallCategoryData.map((item, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div className={`w-4 h-4 rounded-full ${item.count === 3 ? 'bg-orange-500' : 'bg-green-500'}`}></div>
-              <span className={`text-sm ${item.count === 3 ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-gray-600 dark:text-gray-300'}`}>
-                {item.category}: {item.count} stalls
-              </span>
-            </div>
-          ))}
-        </div>
-        {/* Highlight categories with exactly 3 stalls */}
-        {stallCategoryData.filter(item => item.count === 3).length > 0 && (
-          <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-            <h4 className="text-sm font-semibold text-orange-800 dark:text-orange-300 mb-2">
-              🎯 Categories with exactly 3 participant stalls:
-            </h4>
-            <div className="flex flex-wrap gap-3">
-              {stallCategoryData
-                .filter(item => item.count === 3)
-                .map((item, index) => (
-                  <div key={index} className="flex items-center gap-2 px-3 py-1 bg-orange-100 dark:bg-orange-800/30 rounded-full">
-                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                    <span className="text-sm font-medium text-orange-800 dark:text-orange-300">
-                      {item.category}
-                    </span>
-                  </div>
-                ))}
+              <div className="text-4xl mb-2">🏪</div>
+              <p className="text-lg font-medium">No participant stalls available</p>
+              <p className="text-sm">Participant stall data will appear here once available</p>
             </div>
           </div>
         )}
       </div>
       </div>
-
-</>
-
+    </>
   );
 };

@@ -6,6 +6,7 @@ import { Layout } from '../components/common/Layout';
 import { FeatureCard } from '../components/FeatureCard';
 import { ExhibitionSlideshow } from '../components/ExhibitionSlideshow';
 import { MarqueeBanner } from '../components/MarqueeBanner';
+import { useExhibition } from '../contexts/ExhibitionContext';
 
 const features = [
   {
@@ -47,10 +48,34 @@ const features = [
 
 export const Home = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const { selectedExhibition } = useExhibition();
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Get exhibition name from selected exhibition
+  const getExhibitionName = () => {
+    if (!selectedExhibition) return 'Exhibition';
+    return selectedExhibition.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
+  // Get exhibition-specific design
+  const getExhibitionDesign = () => {
+    if (!selectedExhibition) return 'default';
+    
+    if (selectedExhibition.includes('general')) {
+      return 'general';
+    } else if (selectedExhibition.includes('ormas')) {
+      return 'ormas';
+    }
+    
+    return 'default';
+  };
+
+  const design = getExhibitionDesign();
 
   return (
     <Layout>
@@ -60,7 +85,11 @@ export const Home = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
           transition={{ duration: 0.8 }}
-          className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-red-600 to-pink-600 dark:from-primary-700 dark:via-red-700 dark:to-pink-700 text-white"
+          className={`relative overflow-hidden text-white ${
+            design === 'general' 
+              ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-700 dark:via-indigo-700 dark:to-purple-700'
+              : 'bg-gradient-to-r from-primary-600 via-red-600 to-pink-600 dark:from-primary-700 dark:via-red-700 dark:to-pink-700'
+          }`}
         >
           {/* Animated Background */}
           <div className="absolute inset-0">
@@ -92,14 +121,17 @@ export const Home = () => {
             </motion.div>
             
             <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight px-2">
-              ORMAS Exhibition
+              {getExhibitionName()}
               <span className="block text-lg sm:text-2xl md:text-4xl font-normal mt-2 opacity-90">
-                Celebrating Odisha's Heritage
+                {design === 'general' ? 'Showcasing Innovation & Excellence' : 'Celebrating Odisha\'s Heritage'}
               </span>
             </h1>
             
             <p className="text-base sm:text-xl md:text-2xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed opacity-95 px-4">
-              Discover the rich cultural heritage, traditional crafts, and authentic flavors of Odisha
+              {design === 'general' 
+                ? 'Experience the latest innovations, cutting-edge technology, and diverse products from across the region'
+                : 'Discover the rich cultural heritage, traditional crafts, and authentic flavors of Odisha'
+              }
             </p>
             
             <motion.div
@@ -109,8 +141,12 @@ export const Home = () => {
               className="inline-block px-4"
             >
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                <p className="text-sm sm:text-lg font-medium">Experience the Best of Odisha</p>
-                <p className="text-xs sm:text-sm opacity-80 mt-1">Traditional • Authentic • Cultural</p>
+                <p className="text-sm sm:text-lg font-medium">
+                  {design === 'general' ? 'Experience Innovation & Growth' : 'Experience the Best of Odisha'}
+                </p>
+                <p className="text-xs sm:text-sm opacity-80 mt-1">
+                  {design === 'general' ? 'Modern • Innovative • Progressive' : 'Traditional • Authentic • Cultural'}
+                </p>
               </div>
             </motion.div>
           </div>
@@ -141,10 +177,13 @@ export const Home = () => {
             </motion.div>
             
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-3 sm:mb-4 px-2">
-              Explore Our Exhibition
+              {design === 'general' ? 'Discover Our Exhibition' : 'Explore Our Exhibition'}
             </h2>
             <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto px-4">
-              Navigate through different sections of our exhibition to discover the beauty and richness of Odisha's culture
+              {design === 'general' 
+                ? 'Navigate through different sections to explore innovation, technology, and diverse products'
+                : 'Navigate through different sections of our exhibition to discover the beauty and richness of Odisha\'s culture'
+              }
             </p>
           </motion.div>
 
@@ -160,7 +199,11 @@ export const Home = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.8 }}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700 text-white py-12 sm:py-16 relative overflow-hidden"
+          className={`text-white py-12 sm:py-16 relative overflow-hidden ${
+            design === 'general'
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700'
+              : 'bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700'
+          }`}
         >
           <div className="absolute inset-0 bg-black/10">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-50"></div>
@@ -177,11 +220,16 @@ export const Home = () => {
             </motion.div>
             
             <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 px-2">
-              Join Us in Celebrating Odisha's Rich Heritage
+              {design === 'general' 
+                ? 'Join Us in Exploring Innovation & Technology' 
+                : 'Join Us in Celebrating Odisha\'s Rich Heritage'
+              }
             </h3>
             <p className="text-sm sm:text-lg md:text-xl leading-relaxed opacity-95 mb-6 sm:mb-8 max-w-4xl mx-auto px-4">
-              From intricate handloom textiles to exquisite handicrafts, from traditional cuisine to cultural performances, 
-              our exhibition offers a complete immersion into the vibrant world of Odisha's artistic and cultural legacy.
+              {design === 'general'
+                ? 'From cutting-edge technology to innovative products, from modern solutions to progressive ideas, our exhibition showcases the future of development and growth.'
+                : 'From intricate handloom textiles to exquisite handicrafts, from traditional cuisine to cultural performances, our exhibition offers a complete immersion into the vibrant world of Odisha\'s artistic and cultural legacy.'
+              }
             </p>
             
             <motion.button

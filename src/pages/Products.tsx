@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Package, Grid, List, Search, ShoppingCart } from 'lucide-react';
@@ -6,8 +5,12 @@ import { Layout } from '../components/common/Layout';
 import { CategoryButtons } from '../components/products/CategoryButtons';
 import { ProductGrid } from '../components/products/ProductGrid';
 import { getProducts, type Product } from '../services/productService';
+import ExhibitionSelector from "../components/common/ExhibitionSelector";
+import { useExhibition } from "../contexts/ExhibitionContext";
+import { getProductsByExhibition } from "../services/productService";
 
 export const Products = () => {
+  const { selectedExhibition } = useExhibition();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -17,21 +20,18 @@ export const Products = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const fetchedProducts = await getProducts();
-        setProducts(fetchedProducts);
-        setFilteredProducts(fetchedProducts);
-      } catch (err) {
-        setError('Failed to load products');
-        console.error('Error fetching products:', err);
-      } finally {
+    setLoading(true);
+    setError(null);
+    getProductsByExhibition(selectedExhibition)
+      .then((data) => {
+        setProducts(data);
         setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+      })
+      .catch((err) => {
+        setError('Failed to load products');
+        setLoading(false);
+      });
+  }, [selectedExhibition]);
 
   const filterProducts = () => {
     let filtered = [...products];
@@ -94,6 +94,7 @@ export const Products = () => {
       subtitle="Discover authentic handloom, handicrafts, and traditional products from Odisha"
       backgroundGradient="from-blue-50 via-purple-50 to-pink-50 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900"
     >
+  
       {/* Enhanced Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -213,3 +214,5 @@ export const Products = () => {
     </Layout>
   );
 };
+
+export default Products;

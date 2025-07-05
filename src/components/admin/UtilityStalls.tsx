@@ -12,6 +12,8 @@ import {
   Image
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
 
 interface Stall {
   id: string;
@@ -36,6 +38,7 @@ interface Stall {
 }
 
 export const UtilityStalls = () => {
+  const { selectedExhibition } = useExhibition();
   const [utilityStalls, setUtilityStalls] = useState<Stall[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +47,12 @@ export const UtilityStalls = () => {
 
   useEffect(() => {
     fetchUtilityStalls();
-  }, []);
+  }, [selectedExhibition]);
 
   const fetchUtilityStalls = async () => {
     try {
       setLoading(true);
-      const stallsSnapshot = await getDocs(collection(db, 'stalls'));
+      const stallsSnapshot = await getDocs(collection(db, `exhibitions/${selectedExhibition}/stalls`));
       const stalls = stallsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -86,7 +89,7 @@ export const UtilityStalls = () => {
         images: selectedImages.map(file => URL.createObjectURL(file)),
         updatedAt: new Date()
       };
-      await updateDoc(doc(db, 'stalls', editingStall.id), updatedStall);
+      await updateDoc(doc(db, `exhibitions/${selectedExhibition}/stalls`, editingStall.id), updatedStall);
       setUtilityStalls(prev => prev.map(stall => stall.id === editingStall.id ? updatedStall : stall));
       setEditingStall(null);
       setSelectedImages([]);
@@ -99,7 +102,7 @@ export const UtilityStalls = () => {
   const handleDeleteStall = async (stallId: string) => {
     if (window.confirm('Are you sure you want to delete this utility stall?')) {
       try {
-        await deleteDoc(doc(db, 'stalls', stallId));
+        await deleteDoc(doc(db, `exhibitions/${selectedExhibition}/stalls`, stallId));
         setUtilityStalls(prev => prev.filter(stall => stall.id !== stallId));
       } catch (err) {
         setError('Failed to delete stall');
@@ -161,6 +164,7 @@ export const UtilityStalls = () => {
 
   return (
     <div className="space-y-6">
+      <ExhibitionSelector />
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-navy-800">Utility Stalls</h2>
         <div className="text-sm text-gray-600">

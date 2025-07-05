@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MessageSquare, Star, Send, User, Mail, Phone, Heart } from 'lucide-react';
 import { Layout } from '../components/common/Layout';
-import { submitFeedback } from '../services/feedbackService';
+import { submitFeedbackToExhibition } from '../services/feedbackService';
+import { useExhibition } from '../contexts/ExhibitionContext';
 
 export const Feedback = () => {
+  const { selectedExhibition } = useExhibition();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -23,9 +25,9 @@ export const Feedback = () => {
     setLoading(true);
     
     try {
-      await submitFeedback({
+      await submitFeedbackToExhibition(selectedExhibition, {
         ...formData,
-        location: '', // Keep empty for compatibility
+        location: '',
         responses: [
           { question: 'Exhibition Rating', answer: rating.toString() },
           { question: 'Food Rating', answer: foodRating.toString() },

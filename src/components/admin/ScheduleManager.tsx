@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Plus, X, Edit2, Check } from 'lucide-react';
-import { getEvents, saveEvent, updateEvent, deleteEvent, type Event } from '../../services/scheduleService';
+import { getEventsByExhibition, saveEventToExhibition, updateEventInExhibition, deleteEventFromExhibition, type Event as ScheduleEvent } from '../../services/scheduleService';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
 
 export const ScheduleManager = () => {
-  const [events, setEvents] = useState<Event[]>([]);
+  const { selectedExhibition } = useExhibition();
+  const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -26,12 +29,12 @@ export const ScheduleManager = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [selectedExhibition]);
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const fetchedEvents = await getEvents();
+      const fetchedEvents = await getEventsByExhibition(selectedExhibition);
       const eventsWithImages = fetchedEvents.map(event => ({
         ...event,
         images: event.images || ['']
@@ -48,7 +51,7 @@ export const ScheduleManager = () => {
   const handleAdd = async () => {
     if (newEvent.name && newEvent.date && newEvent.time && newEvent.venue) {
       try {
-        const savedEvent = await saveEvent(newEvent);
+        const savedEvent = await saveEventToExhibition(selectedExhibition, newEvent);
         setEvents([...events, savedEvent]);
         setNewEvent({ name: '', date: '', time: '', venue: '', description: '', images: [''] });
       } catch (err) {
@@ -58,7 +61,7 @@ export const ScheduleManager = () => {
     }
   };
 
-  const handleEdit = (event: Event) => {
+  const handleEdit = (event: ScheduleEvent) => {
     setEditingId(event.id);
     setEditForm({
       name: event.name,
@@ -73,7 +76,7 @@ export const ScheduleManager = () => {
   const handleSaveEdit = async (id: string) => {
     if (editForm.name && editForm.date && editForm.time && editForm.venue) {
       try {
-        const updatedEvent = await updateEvent(id, editForm);
+        const updatedEvent = await updateEventInExhibition(selectedExhibition, id, editForm);
         setEvents(events.map(event => 
           event.id === id ? updatedEvent : event
         ));
@@ -87,7 +90,7 @@ export const ScheduleManager = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteEvent(id);
+      await deleteEventFromExhibition(selectedExhibition, id);
       setEvents(events.filter(event => event.id !== id));
     } catch (err) {
       setError('Failed to delete event');
@@ -150,6 +153,7 @@ export const ScheduleManager = () => {
 
   return (
     <div>
+      <ExhibitionSelector />
       <h2 className="text-xl font-semibold mb-4">Manage Schedule</h2>
       
       <div className="grid gap-4 mb-6">

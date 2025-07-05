@@ -1,5 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, X, Edit2, Check } from 'lucide-react';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
+import { db } from '../../firebase/config';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 interface Discount {
   id: string;
@@ -21,6 +25,7 @@ const CATEGORIES = [
 ];
 
 export const DiscountManager = () => {
+  const { selectedExhibition } = useExhibition();
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newDiscount, setNewDiscount] = useState({
@@ -35,6 +40,15 @@ export const DiscountManager = () => {
     stallRange: ''
   });
 
+  useEffect(() => {
+    fetchDiscounts();
+  }, [selectedExhibition]);
+
+  const fetchDiscounts = async () => {
+    const snapshot = await getDocs(collection(db, `exhibitions/${selectedExhibition}/discounts`));
+    setDiscounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Discount[]);
+  };
+
   const validateStallRange = (range: string) => {
     const rangeFormat = /^\d+-\d+$/;
     const commaFormat = /^\d+(,\d+)*$/;
@@ -46,7 +60,7 @@ export const DiscountManager = () => {
     return `ORMAS-${random}-${percentage}`;
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (
       newDiscount.category &&
       newDiscount.percentage &&
@@ -55,16 +69,19 @@ export const DiscountManager = () => {
     ) {
       const percentage = Number(newDiscount.percentage);
       const code = generateDiscountCode(percentage);
-      
-      setDiscounts([
-        ...discounts,
-        {
-          ...newDiscount,
-          id: Date.now().toString(),
-          percentage,
-          code
-        }
-      ]);
+      const docRef = await addDoc(collection(db, `exhibitions/${selectedExhibition}/discounts`), {
+        category: newDiscount.category,
+        percentage,
+        code,
+        stallRange: newDiscount.stallRange
+      });
+      setDiscounts([...discounts, {
+        id: docRef.id,
+        category: newDiscount.category,
+        percentage,
+        code,
+        stallRange: newDiscount.stallRange
+      }]);
       setNewDiscount({ category: '', percentage: '', stallRange: '' });
     }
   };
@@ -78,7 +95,7 @@ export const DiscountManager = () => {
     });
   };
 
-  const handleSaveEdit = (id: string) => {
+  const handleSaveEdit = async (id: string) => {
     if (
       editForm.category &&
       editForm.percentage &&
@@ -87,26 +104,33 @@ export const DiscountManager = () => {
     ) {
       const percentage = Number(editForm.percentage);
       const code = generateDiscountCode(percentage);
-      
-      setDiscounts(discounts.map(discount => 
+      await updateDoc(doc(db, `exhibitions/${selectedExhibition}/discounts`, id), {
+        category: editForm.category,
+        percentage,
+        code,
+        stallRange: editForm.stallRange
+      });
+      setDiscounts(discounts.map(discount =>
         discount.id === id ? {
           ...discount,
           category: editForm.category,
           percentage,
-          stallRange: editForm.stallRange,
-          code
+          code,
+          stallRange: editForm.stallRange
         } : discount
       ));
       setEditingId(null);
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    await deleteDoc(doc(db, `exhibitions/${selectedExhibition}/discounts`, id));
     setDiscounts(discounts.filter(discount => discount.id !== id));
   };
 
   return (
     <div>
+      <ExhibitionSelector />
       <h2 className="text-xl font-semibold mb-4">Manage Discounts</h2>
       
       <div className="grid gap-4 mb-6">

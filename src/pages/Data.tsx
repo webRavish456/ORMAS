@@ -14,10 +14,16 @@ import { TrendingUp, Settings, UserPlus, Users } from 'lucide-react';
 import { getProducts, categories as PRODUCT_CATEGORIES } from '../services/productService';
 import { getExhibitionLayout } from '../services/exhibitionService';
 import { getFoods } from '../services/foodService';
+import ExhibitionSelector from '../components/common/ExhibitionSelector';
+import { useExhibition } from '../contexts/ExhibitionContext';
+import { getProductsByExhibition } from '../services/productService';
+import { getExhibitionLayoutByExhibition } from '../services/exhibitionService';
+import { getFoodsByExhibition } from '../services/foodService';
 
 
 export const Data = () => {
   const { isAdmin, isDataUser, setIsDataUser, logout } = useTheme();
+  const { selectedExhibition } = useExhibition();
   const [localIsAuthenticated, setLocalIsAuthenticated] = useState(isAdmin || isDataUser);
   const [activeTab, setActiveTab] = useState('sales');
   const navigate = useNavigate();
@@ -35,7 +41,7 @@ export const Data = () => {
 
   useEffect(() => {
     // Fetch products and count per category
-    getProducts().then(products => {
+    getProductsByExhibition(selectedExhibition).then(products => {
       const counts: Record<string, number> = {};
       PRODUCT_CATEGORIES.forEach(cat => { counts[cat] = 0; });
       products.forEach(product => {
@@ -47,7 +53,7 @@ export const Data = () => {
     });
 
     // Fetch stall data for pie chart
-    getExhibitionLayout().then(layout => {
+    getExhibitionLayoutByExhibition(selectedExhibition).then(layout => {
       const stallChartData = [
         { name: 'Participant Stalls', value: layout.stats.participant, color: '#3b82f6' },
         { name: 'Utility Stalls', value: layout.stats.utility, color: '#8b5cf6' }
@@ -56,7 +62,7 @@ export const Data = () => {
     });
 
     // Fetch food data for vegetarian vs non-vegetarian pie chart
-    getFoods().then(foods => {
+    getFoodsByExhibition(selectedExhibition).then(foods => {
       const vegetarianCount = foods.filter(food => food.isVegetarian).length;
       const nonVegetarianCount = foods.filter(food => !food.isVegetarian).length;
       const foodChartData = [
@@ -67,16 +73,11 @@ export const Data = () => {
     });
 
     // Fetch category-wise stall data
-    getExhibitionLayout().then(layout => {
-      console.log('All stalls data:', layout.stalls);
-      
+    getExhibitionLayoutByExhibition(selectedExhibition).then(layout => {
       const categoryCounts: Record<string, number> = {};
       let participantStallsCount = 0;
       let stallsWithCategoryCount = 0;
-      
       layout.stalls.forEach(stall => {
-        console.log('Stall:', stall.stallNumber, 'Type:', stall.type, 'Category:', stall.category);
-        
         if (stall.type === 'participant') {
           participantStallsCount++;
           if (stall.category) {
@@ -85,23 +86,15 @@ export const Data = () => {
           }
         }
       });
-
-      console.log('Participant stalls count:', participantStallsCount);
-      console.log('Stalls with category count:', stallsWithCategoryCount);
-      console.log('Category counts:', categoryCounts);
-
-      // Convert to chart data format and sort by count
       const stallCategoryChartData = Object.entries(categoryCounts)
         .map(([category, count]) => ({
           category,
           count
         }))
-        .sort((a, b) => b.count - a.count); // Sort by count descending
-
-      console.log('Final chart data:', stallCategoryChartData);
+        .sort((a, b) => b.count - a.count);
       setStallCategoryData(stallCategoryChartData);
     });
-  }, []);
+  }, [selectedExhibition]);
 
   const handleAuthenticate = () => {
     setLocalIsAuthenticated(true);
@@ -154,6 +147,7 @@ export const Data = () => {
       backgroundGradient="from-indigo-50 to-blue-50 dark:from-dark-900 dark:to-dark-800"
     >
       <div className="max-w-7xl mx-auto">
+     
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

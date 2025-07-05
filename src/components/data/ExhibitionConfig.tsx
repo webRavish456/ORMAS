@@ -4,6 +4,7 @@ import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { Plus, Activity, Package, DollarSign } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
+import { useExhibition } from '../../contexts/ExhibitionContext';
 
 interface Exhibition {
   id?: string;
@@ -97,6 +98,7 @@ const downloadSales = async (exhibitionId: string, exhibitionName: string) => {
 };
 
 export const ExhibitionConfig = () => {
+  const { selectedExhibition } = useExhibition();
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [newExhibition, setNewExhibition] = useState<Exhibition>({
     name: '',
@@ -105,18 +107,27 @@ export const ExhibitionConfig = () => {
     totalSales: 0
   });
 
-  useEffect(() => {
-    fetchExhibitions();
-  }, []);
-
   const fetchExhibitions = async () => {
-    const querySnapshot = await getDocs(collection(db, 'exhibitions'));
-    const exhibitionData = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Exhibition[];
-    setExhibitions(exhibitionData);
+    try {
+      // Get exhibition data from the selected exhibition path
+      const exhibitionDoc = await getDocs(collection(db, 'exhibitions'));
+      const exhibitionData = exhibitionDoc.docs
+        .filter(doc => doc.id === selectedExhibition)
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Exhibition[];
+      setExhibitions(exhibitionData);
+    } catch (error) {
+      console.error('Error fetching exhibitions:', error);
+    }
   };
+
+  useEffect(() => {
+    if (selectedExhibition) {
+      fetchExhibitions();
+    }
+  }, [selectedExhibition]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -3,6 +3,7 @@ import { Layout } from '../components/common/Layout';
 import { ExhibitionMap } from '../components/ExhibitionMap';
 import { X, MapPin, Users, Settings, Package } from 'lucide-react';
 import type { Stall } from '../services/exhibitionService';
+import ExhibitionSelector from '../components/common/ExhibitionSelector';
 
 const ExhibitionMapPage = () => {
   const [selectedStall, setSelectedStall] = useState<Stall | null>(null);

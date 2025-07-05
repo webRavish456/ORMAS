@@ -21,6 +21,8 @@ import {
   Gem
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
 
 interface Stall {
   id: string;
@@ -68,6 +70,7 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 export const ParticipantsStall = () => {
+  const { selectedExhibition } = useExhibition();
   const [participantStalls, setParticipantStalls] = useState<Stall[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,17 +79,16 @@ export const ParticipantsStall = () => {
 
   useEffect(() => {
     fetchParticipantStalls();
-  }, []);
+  }, [selectedExhibition]);
 
   const fetchParticipantStalls = async () => {
     try {
       setLoading(true);
-      const stallsSnapshot = await getDocs(collection(db, 'stalls'));
+      const stallsSnapshot = await getDocs(collection(db, `exhibitions/${selectedExhibition}/stalls`));
       const stalls = stallsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Stall[];
-      
       const participants = stalls.filter(stall => stall.type === 'participant');
       setParticipantStalls(participants);
     } catch (err) {
@@ -112,11 +114,8 @@ export const ParticipantsStall = () => {
 
   const handleSaveStall = async () => {
     if (!editingStall) return;
-  
     try {
       let imageUrls = editingStall.images || [];
-  
-      // Upload images to Firebase Storage and get URLs
       if (selectedImages.length > 0) {
         imageUrls = [];
         for (const file of selectedImages) {
@@ -126,19 +125,13 @@ export const ParticipantsStall = () => {
           imageUrls.push(url);
         }
       }
-  
       const updatedStall = {
         ...editingStall,
         images: imageUrls,
         updatedAt: new Date()
       };
-  
-      await updateDoc(doc(db, 'stalls', editingStall.id), updatedStall);
-      
-      setParticipantStalls(prev => prev.map(stall => 
-        stall.id === editingStall.id ? updatedStall : stall
-      ));
-      
+      await updateDoc(doc(db, `exhibitions/${selectedExhibition}/stalls`, editingStall.id), updatedStall);
+      setParticipantStalls(prev => prev.map(stall => stall.id === editingStall.id ? updatedStall : stall));
       setEditingStall(null);
       setSelectedImages([]);
     } catch (err) {
@@ -146,50 +139,11 @@ export const ParticipantsStall = () => {
       console.error('Error updating stall:', err);
     }
   };
-  // const handleSaveStall = async () => {
-  //   if (!editingStall) return;
-
-  //   try {
-  //     let imageUrls = editingStall.images || [];
-
-  //     // Convert selected images to base64 if new images are selected
-  //     if (selectedImages.length > 0) {
-  //       const imagePromises = selectedImages.map(file => {
-  //         return new Promise<string>((resolve) => {
-  //           const reader = new FileReader();
-  //           reader.onload = (e) => {
-  //             resolve(e.target?.result as string);
-  //           };
-  //           reader.readAsDataURL(file);
-  //         });
-  //       });
-  //       imageUrls = await Promise.all(imagePromises);
-  //     }
-
-  //     const updatedStall = {
-  //       ...editingStall,
-  //       images: imageUrls,
-  //       updatedAt: new Date()
-  //     };
-
-  //     await updateDoc(doc(db, 'stalls', editingStall.id), updatedStall);
-      
-  //     setParticipantStalls(prev => prev.map(stall => 
-  //       stall.id === editingStall.id ? updatedStall : stall
-  //     ));
-      
-  //     setEditingStall(null);
-  //     setSelectedImages([]);
-  //   } catch (err) {
-  //     setError('Failed to update stall');
-  //     console.error('Error updating stall:', err);
-  //   }
-  // };
 
   const handleDeleteStall = async (stallId: string) => {
     if (window.confirm('Are you sure you want to delete this participant stall?')) {
       try {
-        await deleteDoc(doc(db, 'stalls', stallId));
+        await deleteDoc(doc(db, `exhibitions/${selectedExhibition}/stalls`, stallId));
         setParticipantStalls(prev => prev.filter(stall => stall.id !== stallId));
       } catch (err) {
         setError('Failed to delete stall');
@@ -262,6 +216,7 @@ export const ParticipantsStall = () => {
 
   return (
     <div className="space-y-6">
+      <ExhibitionSelector />
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-navy-800">Participant Stalls</h2>
         <div className="text-sm text-gray-600">

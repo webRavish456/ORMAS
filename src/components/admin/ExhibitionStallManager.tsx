@@ -23,6 +23,8 @@ import {
 
 import rawIndiaData from '../../data/india_state_district_block.json';
 import { processIndiaData, getStates, getDistricts, getBlocks } from '../../utils/indiaDataProcessor';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
 
 const CLOUDINARY_UPLOAD_PRESET = 'stalls'; // apna unsigned preset ka naam
 const CLOUDINARY_CLOUD_NAME = 'dywpuv3jk';
@@ -127,6 +129,7 @@ const uploadToCloudinary = async (file: File) => {
 };
 
 export const ExhibitionStallManager = () => {
+  const { selectedExhibition } = useExhibition();
   const [stalls, setStalls] = useState<Stall[]>([]);
   const [selectedStall, setSelectedStall] = useState<Stall | null>(null);
   const [editingStall, setEditingStall] = useState<Stall | null>(null);
@@ -155,11 +158,11 @@ export const ExhibitionStallManager = () => {
 
   useEffect(() => {
     checkExistingStalls();
-  }, []);
+  }, [selectedExhibition]);
 
   const checkExistingStalls = async () => {
     try {
-      const stallsSnapshot = await getDocs(collection(db, 'stalls'));
+      const stallsSnapshot = await getDocs(collection(db, `exhibitions/${selectedExhibition}/stalls`));
       if (!stallsSnapshot.empty) {
         const existingStalls = stallsSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -203,7 +206,7 @@ export const ExhibitionStallManager = () => {
       setError(null);
   
       // Delete existing stalls from Firestore
-      const existingStalls = await getDocs(collection(db, 'stalls'));
+      const existingStalls = await getDocs(collection(db, `exhibitions/${selectedExhibition}/stalls`));
       const deletePromises = existingStalls.docs.map(doc => deleteDoc(doc.ref));
       await Promise.all(deletePromises);
   
@@ -218,8 +221,8 @@ export const ExhibitionStallManager = () => {
             row,
             column: col,
             stallNumber,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           };
           // Do not include 'type' field if undefined
           initialStalls.push(stall);
@@ -228,7 +231,7 @@ export const ExhibitionStallManager = () => {
   
       // Save to Firebase
       const stallDocs = await Promise.all(
-        initialStalls.map(stall => addDoc(collection(db, 'stalls'), stall))
+        initialStalls.map(stall => addDoc(collection(db, `exhibitions/${selectedExhibition}/stalls`), stall))
       );
   
       const stallsWithIds = stallDocs.map((doc, index) => ({
@@ -308,7 +311,7 @@ export const ExhibitionStallManager = () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        const docRef = await addDoc(collection(db, 'stalls'), newStall);
+        const docRef = await addDoc(collection(db, `exhibitions/${selectedExhibition}/stalls`), newStall);
         const createdStall = { ...newStall, id: docRef.id };
         setStalls(prev => {
           const updated = [...prev, createdStall];
@@ -322,7 +325,7 @@ export const ExhibitionStallManager = () => {
       }
       // Existing stall: update type
       const updatedStall = { ...stall, type };
-      await updateDoc(doc(db, 'stalls', stall.id), { type });
+      await updateDoc(doc(db, `exhibitions/${selectedExhibition}/stalls`, stall.id), { type });
       setStalls(prev => {
         const newStalls = prev.map(s => s.id === stall.id ? updatedStall : s);
         // Update stats based on new stalls array
@@ -411,7 +414,7 @@ export const ExhibitionStallManager = () => {
       const cleanedStall = deepCleanObject(updatedStall);
       console.log('Updating stall with data:', cleanedStall);
 
-      await updateDoc(doc(db, 'stalls', editingStall.id), cleanedStall);
+      await updateDoc(doc(db, `exhibitions/${selectedExhibition}/stalls`, editingStall.id), cleanedStall);
       
       setStalls(prev => prev.map(stall => 
         stall.id === editingStall.id ? { ...cleanedStall, id: editingStall.id } : stall
@@ -428,7 +431,7 @@ export const ExhibitionStallManager = () => {
   const handleCancelEdit = async () => {
     if (editingStall && editingStall.id) {
       // Firestore se type aur related fields hatao
-      await updateDoc(doc(db, 'stalls', editingStall.id), {
+      await updateDoc(doc(db, `exhibitions/${selectedExhibition}/stalls`, editingStall.id), {
         type: deleteField(),
         name: deleteField(),
         description: deleteField(),
@@ -458,7 +461,7 @@ export const ExhibitionStallManager = () => {
       try {
         setLoading(true);
         // Delete all existing stalls
-        const existingStalls = await getDocs(collection(db, 'stalls'));
+        const existingStalls = await getDocs(collection(db, `exhibitions/${selectedExhibition}/stalls`));
         const deletePromises = existingStalls.docs.map(doc => deleteDoc(doc.ref));
         await Promise.all(deletePromises);
         
@@ -493,6 +496,7 @@ export const ExhibitionStallManager = () => {
 
   return (
     <div className="space-y-6">
+      <ExhibitionSelector />
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-navy-800">Exhibition Stall Manager</h2>
         {stallsCreated && (

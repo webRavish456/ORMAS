@@ -50,3 +50,43 @@ export const deleteEvent = async (id: string) => {
   const docRef = doc(db, 'events', id);
   await deleteDoc(docRef);
 };
+
+export const getEventsByExhibition = async (exhibition: string): Promise<Event[]> => {
+  const exhibitionEventsCollection = collection(db, `exhibitions/${exhibition}/events`);
+  const snapshot = await getDocs(exhibitionEventsCollection);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Event));
+};
+
+export const saveEventToExhibition = async (exhibition: string, event: Omit<Event, 'id'>) => {
+  const eventWithImages = {
+    ...event,
+    images: event.images || ['']
+  };
+  const exhibitionEventsCollection = collection(db, `exhibitions/${exhibition}/events`);
+  const docRef = await addDoc(exhibitionEventsCollection, eventWithImages);
+  return {
+    id: docRef.id,
+    ...eventWithImages
+  };
+};
+
+export const updateEventInExhibition = async (exhibition: string, id: string, updates: Omit<Event, 'id'>) => {
+  const updatesWithImages = {
+    ...updates,
+    images: updates.images || ['']
+  };
+  const docRef = doc(db, `exhibitions/${exhibition}/events`, id);
+  await updateDoc(docRef, updatesWithImages);
+  return {
+    id,
+    ...updatesWithImages
+  };
+};
+
+export const deleteEventFromExhibition = async (exhibition: string, id: string) => {
+  const docRef = doc(db, `exhibitions/${exhibition}/events`, id);
+  await deleteDoc(docRef);
+};

@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Utensils, MapPin, Clock } from 'lucide-react';
 import { Layout } from '../components/common/Layout';
 import { getFoods, type Food } from '../services/foodService';
+import { useExhibition } from '../contexts/ExhibitionContext';
+import { getFoodsByExhibition } from '../services/foodService';
 
 // Image Carousel component
 const ImageCarousel = ({ images }: { images: string[] }) => {
@@ -61,6 +63,7 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
 };
 
 export const Foods = () => {
+  const { selectedExhibition } = useExhibition();
   const [foods, setFoods] = useState<Food[]>([]);
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,21 +71,19 @@ export const Foods = () => {
   const [dietaryFilter, setDietaryFilter] = useState<string>('All'); // All, Veg, Non-Veg
 
   useEffect(() => {
-    const fetchFoods = async () => {
-      try {
-        const fetchedFoods = await getFoods();
-        setFoods(fetchedFoods);
-        setFilteredFoods(fetchedFoods);
-      } catch (err) {
-        setError('Failed to load foods');
-        console.error('Error fetching foods:', err);
-      } finally {
+    setLoading(true);
+    setError(null);
+    getFoodsByExhibition(selectedExhibition)
+      .then((data) => {
+        setFoods(data);
+        setFilteredFoods(data);
         setLoading(false);
-      }
-    };
-
-    fetchFoods();
-  }, []);
+      })
+      .catch((err) => {
+        setError('Failed to load foods');
+        setLoading(false);
+      });
+  }, [selectedExhibition]);
 
   const filterFoods = () => {
     let filtered = [...foods];

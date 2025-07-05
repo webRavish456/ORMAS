@@ -1,4 +1,3 @@
-
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, query, orderBy } from 'firebase/firestore';
 
@@ -53,4 +52,31 @@ export const generateDiscountCode = (stallNumbers: string[]): { code: string; st
   const stall = stallNumbers[Math.floor(Math.random() * stallNumbers.length)];
   const code = `DISC${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
   return { code, stall };
+};
+
+export const submitFeedbackToExhibition = async (exhibition: string, feedbackData: Omit<FeedbackEntry, 'id' | 'timestamp'>): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, `exhibitions/${exhibition}/feedback`), {
+      ...feedbackData,
+      timestamp: new Date().toISOString()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    throw error;
+  }
+};
+
+export const getFeedbackDataByExhibition = async (exhibition: string): Promise<FeedbackEntry[]> => {
+  try {
+    const q = query(collection(db, `exhibitions/${exhibition}/feedback`), orderBy('timestamp', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as FeedbackEntry));
+  } catch (error) {
+    console.error('Error fetching feedback data:', error);
+    throw error;
+  }
 };

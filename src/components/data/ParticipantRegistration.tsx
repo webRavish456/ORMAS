@@ -8,6 +8,8 @@ import odishaMapping from '../../data/odisha_mapping.json';
 import { indianStates, unionTerritories } from '../../constants/locationConstants';
 import indiaRawData from '../../data/india_state_district_block.json';
 import { processIndiaData, getStates, getDistricts, getBlocks } from '../../utils/indiaDataProcessor';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
 
 interface Participant {
   name: string;
@@ -70,7 +72,7 @@ const initialRegistration: Registration = {
 type CaptureType = 'stall' | 'profile' | 'product' | 'participant-doc' | 'stall-doc';
 
 export const ParticipantRegistration = () => {
-  const [exhibitions, setExhibitions] = useState<Array<{ id: string; name: string }>>([]);
+  const { selectedExhibition } = useExhibition();
   const [registration, setRegistration] = useState<Registration>(initialRegistration);
   const [showWebcam, setShowWebcam] = useState(false);
   const [captureType, setCaptureType] = useState<CaptureType | undefined>(undefined);
@@ -87,10 +89,6 @@ export const ParticipantRegistration = () => {
   const [availableBlocks, setAvailableBlocks] = useState<string[]>([]);
   const [availableGPs, setAvailableGPs] = useState<string[]>([]);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
-
-  useEffect(() => {
-    fetchExhibitions();
-  }, []);
 
   useEffect(() => {
     setProcessedIndiaData(processIndiaData(indiaRawData));
@@ -127,14 +125,6 @@ export const ParticipantRegistration = () => {
       }
     }
   }, [registration.stallState, registration.stallDistrict, registration.stallBlock]);
-
-  const fetchExhibitions = async () => {
-    const snapshot = await getDocs(collection(db, 'exhibitions'));
-    setExhibitions(snapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name
-    })));
-  };
 
   const capturePhoto = () => {
     if (webcamRef.current) {
@@ -294,24 +284,34 @@ export const ParticipantRegistration = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     
     if (!validateForm()) {
+      setError('Please fill in all required fields');
       return;
     }
 
     setLoading(true);
+    setError(null);
+
     try {
-      await addDoc(collection(db, 'registrations'), registration);
+      const registrationData = {
+        ...registration,
+        exhibitionId: selectedExhibition,
+        createdAt: new Date().toISOString()
+      };
+
+      // Save to the correct exhibition path
+      await addDoc(collection(db, `exhibitions/${selectedExhibition}/registrations`), registrationData);
+      
       setSuccess(true);
-      // Reset form after successful submission
       setRegistration(initialRegistration);
+      
       setTimeout(() => {
         setSuccess(false);
       }, 3000);
-    } catch (err) {
+    } catch (error) {
+      console.error('Error submitting registration:', error);
       setError('Failed to submit registration. Please try again.');
-      console.error('Error submitting registration:', err);
     } finally {
       setLoading(false);
     }
@@ -339,6 +339,7 @@ export const ParticipantRegistration = () => {
 
   return (
     <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-navy-800 mb-4">Participant Registration</h2>
       {showWebcam && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-4 max-w-md w-full">
@@ -386,23 +387,6 @@ export const ParticipantRegistration = () => {
         <div className="bg-white rounded-lg p-4 shadow-sm space-y-4">
           <h3 className="font-semibold text-lg text-navy-800">Basic Information</h3>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Exhibition</label>
-            <select
-              value={registration.exhibitionId}
-              onChange={(e) => setRegistration(prev => ({ ...prev, exhibitionId: e.target.value }))}
-              className="w-full px-3 py-2 border rounded-lg text-sm"
-              required
-            >
-              <option value="">Select Exhibition</option>
-              {exhibitions.map(exhibition => (
-                <option key={exhibition.id} value={exhibition.id}>
-                  {exhibition.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">Stall Number</label>
             <input

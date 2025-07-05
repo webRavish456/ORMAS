@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Download, ChevronDown, ChevronUp } from 'lucide-react';
-import { getFeedbackData, type FeedbackEntry } from '../../services/feedbackService';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
+import { getFeedbackDataByExhibition, type FeedbackEntry } from '../../services/feedbackService';
 import { surveyQuestions } from '../../constants/feedbackConstants';
 
 export const FeedbackViewer = () => {
+  const { selectedExhibition } = useExhibition();
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [feedbackData, setFeedbackData] = useState<FeedbackEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,12 +18,12 @@ export const FeedbackViewer = () => {
 
   useEffect(() => {
     fetchFeedback();
-  }, []);
+  }, [selectedExhibition]);
 
   const fetchFeedback = async () => {
     try {
       setLoading(true);
-      const data = await getFeedbackData();
+      const data = await getFeedbackDataByExhibition(selectedExhibition);
       setFeedbackData(data);
     } catch (err) {
       setError('Failed to load feedback data');
@@ -109,6 +112,7 @@ export const FeedbackViewer = () => {
 
   return (
     <div>
+      <ExhibitionSelector />
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Feedback Responses</h2>
         <button

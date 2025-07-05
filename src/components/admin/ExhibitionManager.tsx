@@ -1,9 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { Plus, X, Edit2, Check } from 'lucide-react';
-import { getExhibitionPhotos, saveExhibitionPhoto, deleteExhibitionPhoto, updateExhibitionPhoto, type ExhibitionPhoto } from '../../services/exhibitionService';
+import { useExhibition } from '../../contexts/ExhibitionContext';
+import ExhibitionSelector from '../common/ExhibitionSelector';
+import { getExhibitionPhotosByExhibition, saveExhibitionPhotoToExhibition, deleteExhibitionPhotoFromExhibition, updateExhibitionPhotoInExhibition, type ExhibitionPhoto } from '../../services/exhibitionService';
 
 export const ExhibitionManager = () => {
+  const { selectedExhibition } = useExhibition();
   const [photos, setPhotos] = useState<ExhibitionPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,12 +15,12 @@ export const ExhibitionManager = () => {
 
   useEffect(() => {
     fetchPhotos();
-  }, []);
+  }, [selectedExhibition]);
 
   const fetchPhotos = async () => {
     try {
       setLoading(true);
-      const fetchedPhotos = await getExhibitionPhotos();
+      const fetchedPhotos = await getExhibitionPhotosByExhibition(selectedExhibition);
       setPhotos(fetchedPhotos);
     } catch (err) {
       console.error('Error fetching photos:', err);
@@ -31,7 +33,7 @@ export const ExhibitionManager = () => {
   const handleAdd = async () => {
     if (newPhoto.url) {
       try {
-        const savedPhoto = await saveExhibitionPhoto(newPhoto);
+        const savedPhoto = await saveExhibitionPhotoToExhibition(selectedExhibition, newPhoto);
         setPhotos([...photos, savedPhoto]);
         setNewPhoto({ url: '', caption: '' });
       } catch (err) {
@@ -48,7 +50,7 @@ export const ExhibitionManager = () => {
 
   const handleSaveEdit = async (id: string) => {
     try {
-      const updatedPhoto = await updateExhibitionPhoto(id, editForm);
+      const updatedPhoto = await updateExhibitionPhotoInExhibition(selectedExhibition, id, editForm);
       setPhotos(photos.map(photo => 
         photo.id === id ? updatedPhoto : photo
       ));
@@ -61,7 +63,7 @@ export const ExhibitionManager = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteExhibitionPhoto(id);
+      await deleteExhibitionPhotoFromExhibition(selectedExhibition, id);
       setPhotos(photos.filter(photo => photo.id !== id));
     } catch (err) {
       setError('Failed to delete photo');
@@ -74,6 +76,7 @@ export const ExhibitionManager = () => {
 
   return (
     <div>
+      <ExhibitionSelector />
       <h2 className="text-xl font-semibold mb-4">Manage Exhibition Photos</h2>
       
       <div className="grid gap-4 mb-6">

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Settings } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getExhibitionLayout, type Stall } from '../services/exhibitionService';
+import { getExhibitionLayout, getExhibitionLayoutByExhibition, type Stall } from '../services/exhibitionService';
 import { categories as PRODUCT_CATEGORIES } from '../services/productService';
 import { Shirt, Palette, Leaf, UtensilsCrossed, Sofa, Scissors, Briefcase, Gem } from 'lucide-react';
+import { useExhibition } from '../contexts/ExhibitionContext';
 
 interface ExhibitionMapProps {
   compact?: boolean; // For navbar display
@@ -40,6 +41,7 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
   showStats = false,
   onStallClick 
 }) => {
+  const { selectedExhibition } = useExhibition();
   const [layout, setLayout] = useState<{
     rows: number;
     columns: number;
@@ -55,7 +57,7 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
   useEffect(() => {
     const fetchLayout = async () => {
       try {
-        const layoutData = await getExhibitionLayout();
+        const layoutData = await getExhibitionLayoutByExhibition(selectedExhibition);
         setLayout(layoutData);
       } catch (error) {
         console.error('Error fetching exhibition layout:', error);
@@ -65,7 +67,7 @@ export const ExhibitionMap: React.FC<ExhibitionMapProps> = ({
     };
 
     fetchLayout();
-  }, []);
+  }, [selectedExhibition]);
 
   const getStallAtPosition = (row: number, column: number): Stall | undefined => {
     return layout.stalls.find(stall => stall.row === row && stall.column === column);
