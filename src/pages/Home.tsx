@@ -110,45 +110,118 @@ export const Home = () => {
             />
           </div>
 
-          <div className="relative w-full px-4 py-12 sm:py-16 md:py-24 text-center">
-            <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.8 }}
-              className="mb-4 sm:mb-6"
-            >
-              <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-yellow-300" />
-            </motion.div>
-            
-            <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight px-2">
-              {getExhibitionName()}
-              <span className="block text-lg sm:text-2xl md:text-4xl font-normal mt-2 opacity-90">
-                {design === 'general' ? 'Showcasing Innovation & Excellence' : 'Celebrating Odisha\'s Heritage'}
-              </span>
-            </h1>
-            
-            <p className="text-base sm:text-xl md:text-2xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed opacity-95 px-4">
-              {design === 'general' 
-                ? 'Experience the latest innovations, cutting-edge technology, and diverse products from across the region'
-                : 'Discover the rich cultural heritage, traditional crafts, and authentic flavors of Odisha'
-              }
-            </p>
-            
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              className="inline-block px-4"
-            >
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                <p className="text-sm sm:text-lg font-medium">
-                  {design === 'general' ? 'Experience Innovation & Growth' : 'Experience the Best of Odisha'}
-                </p>
-                <p className="text-xs sm:text-sm opacity-80 mt-1">
-                  {design === 'general' ? 'Modern • Innovative • Progressive' : 'Traditional • Authentic • Cultural'}
-                </p>
-              </div>
-            </motion.div>
+          <div className="relative w-full px-4 py-12 sm:py-16 md:py-24">
+            <div className="max-w-7xl mx-auto">
+              {selectedExhibition && selectedExhibition.includes('ormas') ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                  {/* Left Content */}
+                  <div className="text-center lg:text-left">
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.8 }}
+                      className="mb-4 sm:mb-6"
+                    >
+                      <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 mx-auto lg:mx-0 mb-3 sm:mb-4 text-yellow-300" />
+                    </motion.div>
+                    
+                    <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight px-2 lg:px-0">
+                      {getExhibitionName()}
+                      <span className="block text-lg sm:text-2xl md:text-4xl font-normal mt-2 opacity-90">
+                        {design === 'general' ? 'Showcasing Innovation & Excellence' : 'Celebrating Odisha\'s Heritage'}
+                      </span>
+                    </h1>
+                    
+                    <p className="text-base sm:text-xl md:text-2xl mb-6 sm:mb-8 max-w-3xl mx-auto lg:mx-0 leading-relaxed opacity-95 px-4 lg:px-0">
+                      {design === 'general' 
+                        ? 'Experience the latest innovations, cutting-edge technology, and diverse products from across the region'
+                        : 'Discover the rich cultural heritage, traditional crafts, and authentic flavors of Odisha'
+                      }
+                    </p>
+                    
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.5, duration: 0.6 }}
+                      className="inline-block px-4 lg:px-0"
+                    >
+                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
+                        <p className="text-sm sm:text-lg font-medium">
+                          {design === 'general' ? 'Experience Innovation & Growth' : 'Experience the Best of Odisha'}
+                        </p>
+                        <p className="text-xs sm:text-sm opacity-80 mt-1">
+                          {design === 'general' ? 'Modern • Innovative • Progressive' : 'Traditional • Authentic • Cultural'}
+                        </p>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Right Image - Only for ORMAS */}
+                  <div className="flex justify-center lg:justify-end">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.4, duration: 0.8 }}
+                      className="relative"
+                    >
+                      <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-2xl overflow-hidden shadow-2xl">
+                        <img
+                          src="/Mohan-Majhi-.jpeg"
+                          alt="Mohan Majhi"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                      </div>
+                      {/* Decorative elements */}
+                      <div className="absolute -top-4 -right-4 w-8 h-8 bg-yellow-300 rounded-full opacity-80"></div>
+                      <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-white/30 rounded-full"></div>
+                    </motion.div>
+                  </div>
+                </div>
+              ) : (
+                /* Centered layout for non-ORMAS exhibitions */
+                <div className="text-center">
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.8 }}
+                    className="mb-4 sm:mb-6"
+                  >
+                    <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-yellow-300" />
+                  </motion.div>
+                  
+                  <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight px-2">
+                    {getExhibitionName()}
+                    <span className="block text-lg sm:text-2xl md:text-4xl font-normal mt-2 opacity-90">
+                      {design === 'general' ? 'Showcasing Innovation & Excellence' : 'Celebrating Odisha\'s Heritage'}
+                    </span>
+                  </h1>
+                  
+                  <p className="text-base sm:text-xl md:text-2xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed opacity-95 px-4">
+                    {design === 'general' 
+                      ? 'Experience the latest innovations, cutting-edge technology, and diverse products from across the region'
+                      : 'Discover the rich cultural heritage, traditional crafts, and authentic flavors of Odisha'
+                    }
+                  </p>
+                  
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
+                    className="inline-block px-4"
+                  >
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
+                      <p className="text-sm sm:text-lg font-medium">
+                        {design === 'general' ? 'Experience Innovation & Growth' : 'Experience the Best of Odisha'}
+                      </p>
+                      <p className="text-xs sm:text-sm opacity-80 mt-1">
+                        {design === 'general' ? 'Modern • Innovative • Progressive' : 'Traditional • Authentic • Cultural'}
+                      </p>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </div>
           </div>
         </motion.div>
 

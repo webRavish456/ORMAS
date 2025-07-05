@@ -78,13 +78,23 @@ export const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">O</span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
-              ORMAS
-            </span>
+          <Link to="/" className="flex items-center">
+            {selectedExhibition && selectedExhibition.includes('ormas') ? (
+              <img 
+                src="/ormas-logo.png" 
+                alt="ORMAS Logo" 
+                className="h-14 w-auto object-contain py-1"
+              />
+            ) : (
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">E</span>
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
+                  Exhibition
+                </span>
+              </div>
+            )}
           </Link>
 
           {/* Desktop Navigation */}
